@@ -462,7 +462,7 @@ var SETDEX_BW = {
   },
   "Leavanny": {
     "NU Utility": {"ability":"Swarm","item":"Life Orb","nature":"Jolly","evs":{"at":252,"df":4,"sp":252},"moves":["Leaf Blade","X-Scissor","Synthesis","Heal Bell"]},
-    "ZU Agility": {"ability":"Swarm","item":"Life Orb","nature":"Adamant","evs":{"at":252,"sd":4,"sp":252},"moves":["Agility","X-Scissor","Leaf Blade","Protect"]}
+    "ZU Salac Berry": {"ability":"Swarm","item":"Salac Berry","nature":"Jolly","evs":{"at":252,"df":4,"sp":252},"moves":["Endure","X-Scissor","Leaf Blade","Swords Dance"]}
   },
   "Venipede": {
     "ZU Hazard Setter": {"ability":"Poison Point","item":"Focus Sash","nature":"Timid","ivs":{"at":0},"evs":{"hp":252,"df":4,"sp":252},"moves":["Spikes","Toxic Spikes","Endeavor","Protect"]}
@@ -1374,7 +1374,7 @@ var SETDEX_BW = {
   "Porygon": {
     "LC God Wall [Special]": {"level":5,"ability":"Trace","item":"Eviolite","nature":"Calm","ivs":{"at":0},"evs":{"hp":156,"df":116,"sd":236},"moves":["Tri Attack","Psychic","Thunder Wave","Recover"]},
     "LC God Wall [Physical]": {"level":5,"ability":"Trace","item":"Eviolite","nature":"Bold","ivs":{"at":0},"evs":{"hp":156,"df":196,"sd":156},"moves":["Thunderbolt","Ice Beam","Recover","Toxic"]},
-    "ZU Bulky Setup Sweeper": {"ability":"Download","item":"Eviolite","nature":"Modest","evs":{"at":172,"sa":252,"sp":84},"moves":["Recover","Tri Attack","Charge Beam","Ice Beam"]}
+    "ZU Bulky Setup Sweeper": {"ability":"Download","item":"Eviolite","nature":"Modest","evs":{"hp":172,"sa":252,"sp":84},"moves":["Recover","Tri Attack","Charge Beam","Ice Beam"]}
   },
   "Omanyte": {
     "LC Shell Smash": {"level":5,"ability":"Shell Armor","item":"Eviolite","nature":"Modest","ivs":{"at":0},"evs":{"hp":76,"sa":196,"sp":236},"moves":["Shell Smash","Hydro Pump","Substitute","Ice Beam"]},
@@ -1542,7 +1542,7 @@ var SETDEX_BW = {
     "UU Curse": {"ability":"Unaware","item":"Leftovers","nature":"Careful","evs":{"hp":252,"df":4,"sd":252},"moves":["Curse","Recover","Earthquake","Waterfall"]},
     "UU Physically Defensive": {"ability":"Unaware","item":"Leftovers","nature":"Relaxed","evs":{"hp":252,"df":252,"sd":4},"moves":["Recover","Scald","Toxic","Earthquake"]},
     "RU Physically Defensive": {"ability":"Unaware","item":"Leftovers","nature":"Relaxed","evs":{"hp":248,"df":252,"sd":8},"moves":["Recover","Scald","Earthquake","Toxic"]},
-    "OU Showdown Usage": {"ability":"Unaware","item":"Leftovers","nature":"Impish","evs":{"hp":248,"df":252,"sd":8},"moves":["Recover","Curse","Waterfall","Amnesia"]}
+    "OU Showdown Usage": {"ability":"Unaware","item":"Leftovers","nature":"Impish","evs":{"hp":252,"df":252,"sd":4},"moves":["Recover","Scald","Earthquake","Curse"]}
   },
   "Espeon": {
     "OU Screens Setter": {"ability":"Magic Bounce","item":"Light Clay","nature":"Timid","evs":{"hp":252,"df":4,"sp":252},"moves":["Reflect","Light Screen","Psychic","Grass Knot"]},
@@ -1861,6 +1861,7 @@ var SETDEX_BW = {
     "Ubers Prankster": {"ability":"Prankster","item":"Leftovers","nature":"Bold","evs":{"hp":252,"df":252,"sd":4},"moves":["Will-O-Wisp","Recover","Taunt","Foul Play"]},
     "UU Prankster": {"ability":"Prankster","item":"Leftovers","nature":"Calm","evs":{"hp":252,"df":120,"sd":136},"moves":["Recover","Will-O-Wisp","Taunt","Foul Play"]},
     "Monotype Physically Defensive (Ghost)": {"ability":"Prankster","item":"Leftovers","nature":"Bold","ivs":{"at":0},"evs":{"hp":252,"df":228,"sp":28},"moves":["Taunt","Recover","Will-O-Wisp","Foul Play"]},
+    "OU Showdown Usage": {"ability":"Prankster","item":"Leftovers","nature":"Impish","evs":{"hp":248,"df":252,"sd":8},"moves":["Recover","Taunt","Foul Play","Will-O-Wisp"]},
     "1v1 Showdown Usage": {"ability":"Prankster","item":"Sitrus Berry","nature":"Calm","evs":{"hp":248,"df":8,"sd":252},"moves":["Will-O-Wisp","Taunt","Recover","Snarl"]}
   },
   "Aron": {
@@ -2598,7 +2599,7 @@ var SETDEX_BW = {
     "UU All-Out Attacker": {"ability":"Levitate","item":"Life Orb","nature":"Timid","evs":{"sa":252,"sd":4,"sp":252},"moves":["Psychic","Fire Blast","Shadow Ball","Stealth Rock"]},
     "UU Dual Screens": {"ability":"Levitate","item":"Light Clay","nature":"Timid","evs":{"hp":252,"sd":4,"sp":252},"moves":["Reflect","Light Screen","Taunt","Stealth Rock"]},
     "UU Choice Band": {"ability":"Levitate","item":"Choice Band","nature":"Jolly","evs":{"at":252,"sd":4,"sp":252},"moves":["Zen Headbutt","Fire Punch","Ice Punch","U-turn"]},
-    "OU Showdown Usage": {"ability":"Levitate","item":"Focus Sash","nature":"Naive","evs":{"at":200,"sa":56,"sp":252},"moves":["Stealth Rock","Taunt","Explosion","Flamethrower"]}
+    "OU Showdown Usage": {"ability":"Levitate","item":"Focus Sash","nature":"Hasty","evs":{"at":252,"sa":4,"sp":252},"moves":["Stealth Rock","Taunt","Flamethrower","Explosion"]}
   },
   "Dialga": {
     "Ubers Defensive": {"ability":"Pressure","item":"Leftovers","nature":"Modest","evs":{"hp":252,"sa":56,"sd":200},"moves":["Stealth Rock","Draco Meteor","Fire Blast","Roar"]},
@@ -2725,7 +2726,7 @@ var SETDEX_BW = {
     "NU Bulk Up": {"ability":"Guts","item":"Eviolite","nature":"Adamant","evs":{"hp":252,"at":252,"df":4},"moves":["Bulk Up","Drain Punch","Mach Punch","Payback"]}
   },
   "Conkeldurr": {
-    "OU All-out Attacker": {"ability":"Sheer Force","item":"Life Orb","nature":"Adamant","evs":{"hp":120,"at":252,"sd":116,"sp":20},"moves":["Drain Punch","Mach Punch","Ice Punch","Thunder Punch"]},
+    "OU Bulk Up": {"ability":"Guts","item":"Leftovers","nature":"Careful","ivs":{"sp":0},"evs":{"hp":252,"at":4,"sd":252},"moves":["Bulk Up","Mach Punch","Drain Punch","Payback"]},
     "Doubles OU Physical Attacker": {"ability":"Iron Fist","item":"Life Orb","nature":"Brave","ivs":{"sp":0},"evs":{"hp":144,"at":252,"sd":112},"moves":["Hammer Arm","Mach Punch","Ice Punch","Detect"]},
     "1v1 Fighting Gem": {"ability":"Iron Fist","item":"Fighting Gem","nature":"Adamant","evs":{"hp":248,"at":132,"sd":128},"moves":["Hammer Arm","Mach Punch","Bulk Up","Stone Edge"]}
   },
@@ -3044,8 +3045,7 @@ var SETDEX_BW = {
   },
   "Bisharp": {
     "UU Swords Dance": {"ability":"Defiant","item":"Leftovers","nature":"Adamant","evs":{"hp":52,"at":252,"sp":204},"moves":["Swords Dance","Sucker Punch","Substitute","Low Kick"]},
-    "Doubles OU Physical Attacker": {"ability":"Defiant","item":"Life Orb","nature":"Adamant","evs":{"at":252,"df":4,"sp":252},"moves":["Night Slash","Sucker Punch","Low Kick","Protect"]},
-    "OU Showdown Usage": {"ability":"Defiant","item":"Air Balloon","nature":"Adamant","evs":{"hp":248,"at":252,"sp":8},"moves":["Sucker Punch","Pursuit","Night Slash","Brick Break"]}
+    "Doubles OU Physical Attacker": {"ability":"Defiant","item":"Life Orb","nature":"Adamant","evs":{"at":252,"df":4,"sp":252},"moves":["Night Slash","Sucker Punch","Low Kick","Protect"]}
   },
   "Bouffalant": {
     "UU Swords Dance": {"ability":"Reckless","item":"Lum Berry","nature":"Adamant","evs":{"hp":252,"at":252,"df":4},"moves":["Swords Dance","Head Charge","Earthquake","Wild Charge"]},
