@@ -1,5 +1,5 @@
 import type * as I from '../data/interface';
-import {type DeepPartial, toID, assignWithout, extend} from '../util';
+import { assignWithout, type DeepPartial, extend, toID } from '../util';
 
 export interface MoveData {
   readonly name?: string;
@@ -2940,7 +2940,7 @@ const SS_PATCH: {[name: string]: DeepPartial<MoveData>} = {
   'Dragon Darts': {
     bp: 50,
     type: 'Dragon',
-    multihit: 2,
+    multihit: [1, 2],
     category: 'Physical',
     zp: 100,
     maxPower: 130,
