@@ -55,7 +55,7 @@ class Abilities implements I.Abilities {
   get(name: string) {
     const ability = this.dex.abilities.get(name);
     if (ability.isNonstandard === 'CAP' && this.dex.gen < 4) return undefined;
-    return exists(ability, this.dex.gen) ? new Ability(ability) : undefined;
+    return exists(ability, this.dex.gen, this.dex) ? new Ability(ability) : undefined;
   }
 
   *[Symbol.iterator]() {
@@ -93,7 +93,7 @@ class Items implements I.Items {
     if (this.dex.gen === 3 && item.id === 'enigmaberry') {
       item = this.dex.forGen(4).items.get('enigmaberry');
     }
-    return exists(item, this.dex.gen) ? new Item(item, this.dex.gen) : undefined;
+    return exists(item, this.dex.gen, this.dex) ? new Item(item, this.dex.gen) : undefined;
   }
 
   *[Symbol.iterator]() {
@@ -116,7 +116,9 @@ class Item implements I.Item {
     this.kind = 'Item';
     this.id = item.id as I.ID;
     this.name = item.name as I.ItemName;
-    this.megaStone = item.megaStone;
+    this.megaStone = item.megaStone as unknown as Readonly<{
+      [megaEvolves: I.SpeciesName]: I.SpeciesName;
+    }>;
     this.isBerry = item.isBerry;
     this.naturalGift = item.naturalGift && {
       basePower: item.naturalGift.basePower - (gen === 2 ? 20 : 0),
@@ -134,7 +136,7 @@ class Moves implements I.Moves {
 
   get(name: string) {
     const move = this.dex.moves.get(name);
-    return exists(move, this.dex.gen) ? new Move(move, this.dex) : undefined;
+    return exists(move, this.dex.gen, this.dex) ? new Move(move, this.dex) : undefined;
   }
 
   *[Symbol.iterator]() {
@@ -264,7 +266,7 @@ class Species implements I.Species {
   get(name: string) {
     const species = this.dex.species.get(name);
     if (this.dex.gen >= 6 && species.id === 'aegislashboth') return AegislashBoth(this.dex);
-    return exists(species, this.dex.gen) ? new Specie(species, this.dex) : undefined;
+    return exists(species, this.dex.gen, this.dex) ? new Specie(species, this.dex) : undefined;
   }
 
   *[Symbol.iterator]() {
@@ -315,11 +317,11 @@ class Specie implements I.Specie {
     this.baseStats = species.baseStats;
     this.weightkg = species.weightkg;
 
-    const nfe = !!species.evos?.some((s: string) => exists(dex.species.get(s), dex.gen));
+    const nfe = !!species.evos?.some((s: string) => exists(dex.species.get(s), dex.gen, dex));
     if (nfe) this.nfe = nfe;
     if (species.gender === 'N' && dex.gen > 1) this.gender = species.gender;
 
-    const formes = species.otherFormes?.filter((s: string) => exists(dex.species.get(s), dex.gen));
+    const formes = species.otherFormes?.filter((s: string) => exists(dex.species.get(s), dex.gen, dex));
     if (species.id.startsWith('aegislash')) {
       if (species.id === 'aegislashblade') {
         this.otherFormes = ['Aegislash-Shield', 'Aegislash-Both'] as I.SpeciesName[];
@@ -348,7 +350,7 @@ class Specie implements I.Specie {
         !(species.id.startsWith('toxtricity') || species.id.startsWith('urshifu'))) {
       const formes = this.otherFormes || [];
       const gmax = dex.species.get(`${species.name}-Gmax`);
-      if (exists(gmax, dex.gen)) this.otherFormes = [...formes, gmax.name].sort();
+      if (exists(gmax, dex.gen, dex)) this.otherFormes = [...formes, gmax.name].sort();
     }
 
     if (dex.gen > 2) this.abilities = {0: species.abilities[0] as I.AbilityName};
@@ -393,12 +395,12 @@ export class Types implements I.Types {
 
     this.byID = {};
     for (const id in this.dex.data.Types) {
-      if (!exists(this.dex.types.get(id), this.dex.gen)) continue;
+      if (!exists(this.dex.types.get(id), this.dex.gen, this.dex)) continue;
       const name = id[0].toUpperCase() + id.slice(1) as Exclude<I.TypeName, '???'>;
 
       const effectiveness = {'???': 1} as {[type in I.TypeName]: I.TypeEffectiveness};
       for (const t2ID in this.dex.data.Types) {
-        if (!exists(this.dex.types.get(t2ID), this.dex.gen)) continue;
+        if (!exists(this.dex.types.get(t2ID), this.dex.gen, this.dex)) continue;
         const t = t2ID[0].toUpperCase() + t2ID.slice(1) as Exclude<I.TypeName, '???'>;
         effectiveness[t] = DAMAGE_TAKEN[this.dex.data.Types[t2ID].damageTaken[name]!];
       }
@@ -492,9 +494,12 @@ const NATDEX_BANNED = [
   'Floette-Eternal',
 ];
 
-function exists(val: D.Ability | D.Item | D.Move | D.Species | D.Type, gen: I.GenerationNum) {
+function exists(val: D.Ability | D.Item | D.Move | D.Species | D.Type, gen: I.GenerationNum, dex?: D.ModdedDex) {
   if (!val.exists || val.id === 'noability') return false;
-  if (val.kind === 'Species' && val.isCosmeticForme) return false;
+  if (val.kind === 'Species' && dex) {
+    const base = val.baseSpecies ? dex.species.get(val.baseSpecies) : undefined;
+    if (base && base.cosmeticFormes?.includes(val.name)) return false;
+  }
   if (gen === 7 && val.isNonstandard === 'LGPE') return true;
   if (gen >= 8) {
     if (gen === 8) {
