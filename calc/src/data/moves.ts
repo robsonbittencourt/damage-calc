@@ -1,5 +1,5 @@
 import type * as I from '../data/interface';
-import { assignWithout, type DeepPartial, extend, toID } from '../util';
+import {assignWithout, type DeepPartial, extend, toID} from '../util';
 
 export interface MoveData {
   readonly name?: string;

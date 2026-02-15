@@ -321,7 +321,8 @@ class Specie implements I.Specie {
     if (nfe) this.nfe = nfe;
     if (species.gender === 'N' && dex.gen > 1) this.gender = species.gender;
 
-    const formes = species.otherFormes?.filter((s: string) => exists(dex.species.get(s), dex.gen, dex));
+    const formes = species.otherFormes?.filter((s: string) =>
+      exists(dex.species.get(s), dex.gen, dex));
     if (species.id.startsWith('aegislash')) {
       if (species.id === 'aegislashblade') {
         this.otherFormes = ['Aegislash-Shield', 'Aegislash-Both'] as I.SpeciesName[];
@@ -494,11 +495,15 @@ const NATDEX_BANNED = [
   'Floette-Eternal',
 ];
 
-function exists(val: D.Ability | D.Item | D.Move | D.Species | D.Type, gen: I.GenerationNum, dex?: D.ModdedDex) {
+function exists(
+  val: D.Ability | D.Item | D.Move | D.Species | D.Type,
+  gen: I.GenerationNum,
+  dex?: D.ModdedDex
+) {
   if (!val.exists || val.id === 'noability') return false;
   if (val.kind === 'Species' && dex) {
     const base = val.baseSpecies ? dex.species.get(val.baseSpecies) : undefined;
-    if (base && base.cosmeticFormes?.includes(val.name)) return false;
+    if (base?.cosmeticFormes?.includes(val.name)) return false;
   }
   if (gen === 7 && val.isNonstandard === 'LGPE') return true;
   if (gen >= 8) {
