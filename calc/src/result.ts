@@ -76,6 +76,7 @@ export class Result {
       this.move,
       this.field,
       this.damage,
+      this.rawDesc,
       err
     );
   }

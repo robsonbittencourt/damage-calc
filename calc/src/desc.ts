@@ -3,9 +3,10 @@ import type {Field, Side} from './field';
 import type {Move} from './move';
 import type {Pokemon} from './pokemon';
 import {type Damage, damageRange, multiDamageRange} from './result';
-import {error} from './util';
+import {error, toID} from './util';
 // NOTE: This needs to come last to simplify bundling
 import {isGrounded} from './mechanics/util';
+import {getBerryResistType} from './items';
 
 export interface RawDesc {
   HPEVs?: string;
@@ -75,7 +76,7 @@ export function display(
   const damageText = `${min}-${max} (${minDisplay} - ${maxDisplay}${notation})`;
 
   if (move.category === 'Status' && !move.named('Nature Power')) return `${desc}: ${damageText}`;
-  const koChanceText = getKOChance(gen, attacker, defender, move, field, damage, err).text;
+  const koChanceText = getKOChance(gen, attacker, defender, move, field, damage, rawDesc, err).text;
   return koChanceText ? `${desc}: ${damageText} -- ${koChanceText}` : `${desc}: ${damageText}`;
 }
 
@@ -272,6 +273,7 @@ export function getKOChance(
   move: Move,
   field: Field,
   damageObj: Damage,
+  rawDesc: RawDesc,
   err = true
 ) {
   const [damage, approximate] = combine(damageObj);
@@ -302,14 +304,30 @@ export function getKOChance(
   // to an approximate distribution if greater than 3 hits
   const qualifier = approximate ? 'approx. ' : '';
 
-  const hazardsText = hazards.texts.length > 0
-    ? ' after ' + serializeText(hazards.texts)
-    : '';
-  const afterText =
-    hazards.texts.length > 0 || eot.texts.length > 0
-      ? ' after ' + serializeText(hazards.texts.concat(eot.texts))
-      : '';
-  const afterTextNoHazards = eot.texts.length > 0 ? ' after ' + serializeText(eot.texts) : '';
+  const {
+    recovery: berryRecovery,
+    threshold: berryThreshold,
+  } = getBerryRecovery(attacker, defender, gen, move);
+
+  let berryText = '';
+  if (berryRecovery > 0) {
+    berryText = (defender.item || 'Berry') + ' recovery';
+  }
+
+  let damageWithoutBerry: number[] | undefined;
+  if (rawDesc.defenderItem && move.hasType(getBerryResistType(rawDesc.defenderItem))) {
+    const reduction = defender.hasAbility('Ripen') ? 0.25 : 0.5;
+    if (typeof damageObj === 'number') {
+      damageWithoutBerry = [Math.floor(damageObj / reduction)];
+    } else if (typeof damageObj[0] === 'number') {
+      damageWithoutBerry = (damage).map(d => Math.floor(d / reduction));
+    } else {
+      const dists = damageObj as number[][];
+      const firstDist = dists[0].map(d => Math.floor(d / reduction));
+      const distsWithoutBerry = [firstDist].concat(dists.slice(1));
+      damageWithoutBerry = combine(distsWithoutBerry)[0];
+    }
+  }
 
   function roundChance(chance: number) {
     // prevent displaying misleading 100% or 0% chances
@@ -321,7 +339,23 @@ export function getKOChance(
     chanceWithEot: number | undefined,
     n: number,
     multipleTurns = false,
+    berryRelevant = false,
   ) {
+    const combinedTexts = hazards.texts.concat(eot.texts);
+    if (berryRelevant && berryText) combinedTexts.push(berryText);
+
+    const hazardsText = hazards.texts.length > 0
+      ? ' after ' + serializeText(hazards.texts)
+      : '';
+    const afterText = combinedTexts.length > 0
+      ? ' after ' + serializeEndOfTurnTexts(combinedTexts)
+      : '';
+
+    const afterTextNoHazards = (eot.texts.length > 0 || (berryRelevant && berryText))
+      ? ' after ' + serializeEndOfTurnTexts(
+        berryRelevant && berryText ? eot.texts.concat([berryText]) : eot.texts
+      )
+      : '';
     // chanceWithoutEot and chanceWithEot are calculated separately for OHKOs
     // because the difference between KOing at start of turn is very important in some cases
     // for 2HKOs and onward, only chanceWithEot is calculated,
@@ -335,7 +369,7 @@ export function getKOChance(
     let text = qualifier;
     let chance = undefined;
     if (chanceWithoutEot === undefined || chanceWithEot === undefined) {
-      text += `possible ${KOTurnText}`;
+      text += `possible ${KOTurnText}${afterText}`;
       // not a KO
     } else if (chanceWithoutEot + chanceWithEot === 0) {
       chance = 0;
@@ -379,74 +413,94 @@ export function getKOChance(
   }
 
   if ((move.timesUsed === 1 && move.timesUsedWithMetronome === 1) || move.isZ) {
-    const chance = computeKOChance(
-      damage, defender.curHP() - hazards.damage, 0, 1, 1, defender.maxHP(), 0
+    const hits = move.timesUsed || 1;
+    const res = computeKOChance(
+      damage, defender.curHP() - hazards.damage, 0, hits,
+      1, defender.maxHP(), 0, berryRecovery, berryThreshold,
+      false, damageWithoutBerry
     );
-    const chanceWithEot = computeKOChance(
-      damage, defender.curHP() - hazards.damage, eot.damage, 1, 1, defender.maxHP(), toxicCounter
+    const resWithEot = computeKOChance(
+      damage, defender.curHP() - hazards.damage, eot.damage, hits,
+      1, defender.maxHP(), toxicCounter, berryRecovery, berryThreshold,
+      false, damageWithoutBerry
     );
 
     // checks if either chance is greater than 0
-    if (chance + chanceWithEot > 0) return KOChance(chance, chanceWithEot, 1);
+    if (res.chance + resWithEot.chance > 0) {
+      return KOChance(
+        res.chance, resWithEot.chance, 1, false,
+        res.berryConsumed || resWithEot.berryConsumed
+      );
+    }
 
     for (let i = 2; i <= 4; i++) {
-      const chance = computeKOChance(
-        damage, defender.curHP() - hazards.damage, eot.damage, i, 1, defender.maxHP(), toxicCounter
+      const res = computeKOChance(
+        damage, defender.curHP() - hazards.damage, eot.damage, i,
+        1, defender.maxHP(), toxicCounter, berryRecovery, berryThreshold,
+        false, damageWithoutBerry
       );
-      if (chance > 0) return KOChance(0, chance, i);
+
+      if (res.chance > 0) return KOChance(0, res.chance, i, false, res.berryConsumed);
     }
 
     for (let i = 5; i <= 9; i++) {
-      if (
-        predictTotal(damage[0], eot.damage, i, 1, toxicCounter, defender.maxHP()) >=
-        defender.curHP() - hazards.damage
-      ) {
-        return KOChance(0, 1, i);
+      const totalMin = predictTotal(
+        damage[0], eot.damage, i, 1, toxicCounter, defender.maxHP()
+      );
+      const requiredHP = defender.curHP() - hazards.damage;
+
+      if (totalMin >= requiredHP + berryRecovery) {
+        return KOChance(0, 1, i, false, berryRecovery > 0);
       } else if (
-        predictTotal(damage[damage.length - 1], eot.damage, i, 1, toxicCounter, defender.maxHP()) >=
-        defender.curHP() - hazards.damage
-      ) {
+        predictTotal(
+          damage[damage.length - 1], eot.damage, i, 1, toxicCounter, defender.maxHP()
+        ) >=
+        requiredHP + berryRecovery) {
         // possible but no concrete chance
-        return KOChance(undefined, undefined, i);
+        return KOChance(undefined, undefined, i, false, berryRecovery > 0);
       }
     }
   } else {
-    const chance = computeKOChance(
+    const hits = move.hits || 1;
+    const timesUsed = move.timesUsed || 1;
+    const res = computeKOChance(
       damage, defender.maxHP() - hazards.damage,
       eot.damage,
-      move.hits || 1,
-      move.timesUsed || 1,
+      hits,
+      timesUsed,
       defender.maxHP(),
-      toxicCounter
-    );
-    if (chance > 0) return KOChance(0, chance, move.timesUsed, chance === 1);
-
-    if (predictTotal(
-      damage[0],
-      eot.damage,
-      1,
-      move.timesUsed,
       toxicCounter,
-      defender.maxHP()
-    ) >=
-      defender.curHP() - hazards.damage
-    ) {
-      return KOChance(0, 1, move.timesUsed, true);
+      berryRecovery,
+      berryThreshold,
+    );
+
+    if (res.chance > 0) {
+      return KOChance(
+        0, res.chance, timesUsed, res.chance === 1, res.berryConsumed
+      );
+    }
+
+    const totalMin = predictTotal(
+      damage[0], eot.damage, 1, timesUsed, toxicCounter, defender.maxHP()
+    );
+    const requiredHP = defender.curHP() - hazards.damage;
+
+    if (totalMin >= requiredHP + berryRecovery) {
+      return KOChance(0, 1, timesUsed, true, berryRecovery > 0);
     } else if (
       predictTotal(
         damage[damage.length - 1],
         eot.damage,
         1,
-        move.timesUsed,
+        timesUsed,
         toxicCounter,
         defender.maxHP()
-      ) >=
-      defender.curHP() - hazards.damage
+      ) >= requiredHP + berryRecovery
     ) {
       // possible but no real idea
-      return KOChance(undefined, undefined, move.timesUsed, true);
+      return KOChance(undefined, undefined, timesUsed, true, berryRecovery > 0);
     }
-    return KOChance(0, 0, move.timesUsed);
+    return KOChance(0, 0, timesUsed);
   }
 
   return {chance: 0, n: 0, text: ''};
@@ -505,6 +559,63 @@ function combine(damage: Damage): [number[], boolean] {
 
   const d = damage as number[][];
   return combineDistributions(d);
+}
+
+function getBerryRecovery(
+  attacker: Pokemon, defender: Pokemon, gen: Generation, move: Move
+): { recovery: number; threshold: number } {
+  if (attacker.hasAbility('Unnerve', 'As One (Glastrier)', 'As One (Spectrier)')) {
+    return {recovery: 0, threshold: 0};
+  }
+
+  if (defender.hasItem('Sitrus Berry')) {
+    let recovery = gen.num === 3 ? 30 : Math.floor(defender.maxHP() / 4);
+    if (defender.hasAbility('Ripen')) recovery *= 2;
+    return {
+      recovery,
+      threshold: Math.floor(defender.maxHP() / 2),
+    };
+  } else if (defender.hasItem('Oran Berry')) {
+    let recovery = 10;
+    if (defender.hasAbility('Ripen')) recovery *= 2;
+    return {
+      recovery,
+      threshold: Math.floor(defender.maxHP() / 2),
+    };
+  } else if (
+    defender.hasItem('Figy Berry', 'Wiki Berry', 'Mago Berry', 'Aguav Berry', 'Iapapa Berry')
+  ) {
+    let recovery = Math.floor(defender.maxHP() / 3);
+    if (defender.hasAbility('Ripen')) recovery *= 2;
+    return {
+      recovery,
+      threshold: Math.floor(defender.maxHP() / 4),
+    };
+  } else if (defender.hasItem('Enigma Berry')) {
+    const moveType = gen.types.get(toID(move.type))!;
+    let effectiveness = 1;
+
+    if (defender.teraType && defender.teraType !== 'Stellar') {
+      effectiveness = moveType.effectiveness[defender.teraType]!;
+    } else {
+      effectiveness = moveType.effectiveness[defender.types[0]]!;
+      if (defender.types[1]) {
+        effectiveness *= moveType.effectiveness[defender.types[1]]!;
+      }
+    }
+
+    const isSuperEffective = effectiveness > 1;
+
+    if (isSuperEffective) {
+      let recovery = Math.floor(defender.maxHP() / 4);
+      if (defender.hasAbility('Ripen')) recovery *= 2;
+      return {
+        recovery,
+        threshold: defender.maxHP(),
+      };
+    }
+  }
+  return {recovery: 0, threshold: 0};
 }
 
 const TRAPPING = [
@@ -760,8 +871,12 @@ function computeKOChance(
   hits: number,
   timesUsed: number,
   maxHP: number,
-  toxicCounter: number
-) {
+  toxicCounter: number,
+  berryRecovery = 0,
+  berryThreshold = 0,
+  berryConsumed = false,
+  damageWithoutBerry?: number[]
+): { chance: number; berryConsumed: boolean } {
   let toxicDamage = 0;
   if (toxicCounter > 0) {
     toxicDamage = Math.floor((toxicCounter * maxHP) / 16);
@@ -773,44 +888,87 @@ function computeKOChance(
     // so that the pokemon doesnt "revive" from being KO'd
     // since recovery happens before toxic damage (and therefore always reduces toxic damage),
     // if the net healing is greater than zero, toxicDamage should also be set to zero.
+    // eot check is done after berry check, so we don't need to change eot logic itself here
     if (eot - toxicDamage > 0) {
       eot = 0;
       toxicDamage = 0;
     }
+
+    let totalChance = 0;
+    let anyBerryConsumed = false;
+
     for (let i = 0; i < n; i++) {
-      if (damage[n - 1] - eot + toxicDamage < hp) return 0;
-      if (damage[i] - eot + toxicDamage >= hp) {
-        return (n - i) / n;
+      let hpAfterDamage = hp - damage[i];
+      let consumedNow = berryConsumed;
+
+      if (
+        !consumedNow && berryRecovery > 0 &&
+        hpAfterDamage <= berryThreshold && hpAfterDamage > 0
+      ) {
+        hpAfterDamage += berryRecovery;
+
+        if (hpAfterDamage > maxHP) {
+          hpAfterDamage = maxHP;
+        }
+        consumedNow = true;
+      }
+
+      if (hpAfterDamage + eot - toxicDamage <= 0) {
+        totalChance += 1;
+        if (consumedNow) anyBerryConsumed = true;
       }
     }
+
+    return {chance: totalChance / n, berryConsumed: anyBerryConsumed};
   }
 
   let sum = 0;
   let lastc = 0;
+  let lastBerry = false;
+  let anyBerryConsumed = false;
+
   for (let i = 0; i < n; i++) {
     let c;
+    let berry;
     if (i === 0 || damage[i] !== damage[i - 1]) {
-      c = computeKOChance(
-        damage,
-        hp - damage[i] + eot - toxicDamage,
+      let hpAfterDamage = hp - damage[i];
+      let consumed = berryConsumed;
+      if (!consumed && berryRecovery > 0 && hpAfterDamage <= berryThreshold && hpAfterDamage > 0) {
+        hpAfterDamage += berryRecovery;
+
+        if (hpAfterDamage > maxHP) {
+          hpAfterDamage = maxHP;
+        }
+
+        consumed = true;
+      }
+
+      const result = computeKOChance(
+        damageWithoutBerry || damage,
+        hpAfterDamage + eot - toxicDamage,
         eot,
         hits - 1,
         timesUsed,
         maxHP,
-        toxicCounter
+        toxicCounter,
+        berryRecovery,
+        berryThreshold,
+        damageWithoutBerry ? true : consumed,
+        damageWithoutBerry
       );
+      c = result.chance;
+      berry = result.berryConsumed;
     } else {
       c = lastc;
+      berry = lastBerry;
     }
-    if (c === 1) {
-      sum += n - i;
-      break;
-    } else {
-      sum += c;
-    }
+    sum += c;
+    if (c > 0 && berry) anyBerryConsumed = true;
+
     lastc = c;
+    lastBerry = berry;
   }
-  return sum / n;
+  return {chance: sum / n, berryConsumed: anyBerryConsumed};
 }
 
 function predictTotal(
@@ -1098,6 +1256,25 @@ function getDescriptionLevels(attacker: Pokemon, defender: Pokemon) {
   const elide = [100, 50, 5].includes(attacker.level);
   const level = elide ? '' : `Lvl ${attacker.level}`;
   return [level, level];
+}
+
+function serializeEndOfTurnTexts(texts: string[]) {
+  const recoveryIndices: number[] = [];
+
+  for (let i = 0; i < texts.length; i++) {
+    if (texts[i].endsWith(' recovery')) {
+      recoveryIndices.push(i);
+    }
+  }
+
+  if (recoveryIndices.length > 1) {
+    for (let i = 0; i < recoveryIndices.length - 1; i++) {
+      const idx = recoveryIndices[i];
+      texts[idx] = texts[idx].replace(' recovery', '');
+    }
+  }
+
+  return serializeText(texts);
 }
 
 function serializeText(arr: string[]) {
