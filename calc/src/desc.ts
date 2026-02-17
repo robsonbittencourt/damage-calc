@@ -542,7 +542,9 @@ export function computeMultiHitKOChance(
   eot: number,
   maxHP: number,
   berryRecovery: number | number[] = 0,
-  berryThreshold: number | number[] = 0
+  berryThreshold: number | number[] = 0,
+  rowsPerTurn?: number,
+  toxicCounter = 0
 ): { chance: number; berryConsumed: boolean } {
   let state = new Map<number, number>();
   let stateBerry = new Map<number, number>();
@@ -604,9 +606,57 @@ export function computeMultiHitKOChance(
 
     state = nextState;
     stateBerry = nextStateBerry;
+
+    if (rowsPerTurn && (i + 1) % rowsPerTurn === 0) {
+      let toxicDamage = 0;
+      if (toxicCounter > 0) {
+        toxicDamage = Math.floor((toxicCounter * maxHP) / 16);
+        toxicCounter++;
+      }
+
+      let turnEot = eot;
+      if (turnEot - toxicDamage > 0) {
+        toxicDamage = 0;
+      } else {
+        turnEot -= toxicDamage;
+      }
+
+      if (turnEot !== 0) {
+        const nextStateEot = new Map<number, number>();
+        const nextStateBerryEot = new Map<number, number>();
+
+        const stateEntries = Array.from(state.entries());
+        for (let j = 0; j < stateEntries.length; j++) {
+          const [currentHP, currentProb] = stateEntries[j];
+          let nextHP = currentHP + turnEot;
+          if (nextHP <= 0) {
+            koChance += currentProb;
+          } else {
+            if (nextHP > maxHP) nextHP = maxHP;
+            nextStateEot.set(nextHP, (nextStateEot.get(nextHP) || 0) + currentProb);
+          }
+        }
+
+        const stateBerryEntries = Array.from(stateBerry.entries());
+        for (let j = 0; j < stateBerryEntries.length; j++) {
+          const [currentHP, currentProb] = stateBerryEntries[j];
+          let nextHP = currentHP + turnEot;
+          if (nextHP <= 0) {
+            koChance += currentProb;
+            berryConsumed = true;
+          } else {
+            if (nextHP > maxHP) nextHP = maxHP;
+            nextStateBerryEot.set(nextHP, (nextStateBerryEot.get(nextHP) || 0) + currentProb);
+          }
+        }
+
+        state = nextStateEot;
+        stateBerry = nextStateBerryEot;
+      }
+    }
   }
 
-  if (eot !== 0) {
+  if (!rowsPerTurn && eot !== 0) {
     const stateEntries = Array.from(state.entries());
     for (let i = 0; i < stateEntries.length; i++) {
       const [currentHP, currentProb] = stateEntries[i];
@@ -809,7 +859,7 @@ function getHazards(gen: Generation, defender: Pokemon, defenderSide: Side) {
   return {damage, texts};
 }
 
-function getEndOfTurn(
+export function getEndOfTurn(
   gen: Generation,
   attacker: Pokemon,
   defender: Pokemon,
@@ -1388,7 +1438,7 @@ function getDescriptionLevels(attacker: Pokemon, defender: Pokemon) {
   return [level, level];
 }
 
-function serializeEndOfTurnTexts(texts: string[]) {
+export function serializeEndOfTurnTexts(texts: string[]) {
   const recoveryIndices: number[] = [];
 
   for (let i = 0; i < texts.length; i++) {

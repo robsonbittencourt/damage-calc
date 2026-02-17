@@ -147,7 +147,7 @@ export { MultiResult } from './multi-result';
 export {type GenerationNum, type StatsTable, type StatID} from './data/interface';
 export {Generations} from './data/index';
 export {toID} from './util';
-export { getBerryRecovery, computeMultiHitKOChance } from './desc';
+export { getBerryRecovery, computeMultiHitKOChance, getEndOfTurn, serializeEndOfTurnTexts } from './desc';
 export {type State} from './state';
 
 export {ABILITIES} from './data/abilities';

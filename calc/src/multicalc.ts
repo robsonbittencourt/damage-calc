@@ -5,7 +5,7 @@ import type {Move} from './move';
 import type {Field} from './field';
 import type {Result} from './result';
 import type {Generation} from './data/interface';
-import {computeMultiHitKOChance, getBerryRecovery} from './desc';
+import { computeMultiHitKOChance, getBerryRecovery, getEndOfTurn } from './desc';
 
 import { MultiResult } from './multi-result';
 
@@ -120,13 +120,19 @@ export function calculateMulti(
       }
     }
 
+    const rowsPerTurn = currentDamageArrays.length;
+    const toxicCounter = defender.status === 'tox' ? defender.toxicCounter : 0;
+    const eot = getEndOfTurn(gen, attackers[0], defender, moves[0], field);
+
     const result = computeMultiHitKOChance(
       currentDamageArrays,
-      defender.maxHP(),
-      0,
       defender.curHP(),
+      eot.damage,
+      defender.maxHP(),
       currentBerryRecoveries,
-      currentBerryThresholds
+      currentBerryThresholds,
+      rowsPerTurn,
+      toxicCounter
     );
 
     if (result.chance === 1) {
@@ -150,5 +156,6 @@ export function calculateMulti(
     }
   }
 
-  return new MultiResult(results, koChance);
+  const finalEot = getEndOfTurn(gen, attackers[0], defender, moves[0], field);
+  return new MultiResult(results, koChance, finalEot);
 }

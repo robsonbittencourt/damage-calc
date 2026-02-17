@@ -1,12 +1,13 @@
 import { Result } from './result';
 import { Pokemon } from './pokemon';
 import { StatID } from './data/interface';
-import { computeMultiHitKOChance, getBerryRecovery } from './desc';
+import { computeMultiHitKOChance, getBerryRecovery, serializeEndOfTurnTexts } from './desc';
 
 export class MultiResult {
   constructor(
     public results: Result[],
-    public koChance: { chance: number; n: number; text: string; berryConsumed: boolean }
+    public koChance: { chance: number; n: number; text: string; berryConsumed: boolean },
+    public eot: { damage: number; texts: string[] }
   ) {}
 
   public getHKO(): string {
@@ -32,6 +33,9 @@ export class MultiResult {
         }
     }
 
+    const rowsPerTurn = baseDamages.length;
+    const toxicCounter = target.status === 'tox' ? target.toxicCounter : 0;
+
     for (let i = 1; i <= 9; i++) {
       const currentDamages: number[][] = [];
       const currentBerryRecovery: number[] = [];
@@ -43,18 +47,28 @@ export class MultiResult {
         currentBerryThreshold.push(...baseBerryThreshold);
       }
 
-      const result = computeMultiHitKOChance(currentDamages, target.maxHP(), 0, target.curHP(), currentBerryRecovery, currentBerryThreshold);
+      const result = computeMultiHitKOChance(
+        currentDamages,
+        target.curHP(),
+        this.eot.damage,
+        target.maxHP(),
+        currentBerryRecovery,
+        currentBerryThreshold,
+        rowsPerTurn,
+        toxicCounter
+      );
 
       if (result.chance > 0) {
         const hkoText = i === 1 ? "OHKO" : `${i}HKO`;
         const berryText = result.berryConsumed ? ` after ${target.item} recovery` : ""; 
+        const eotText = this.eot.texts.length > 0 ? ` after ${serializeEndOfTurnTexts(this.eot.texts)}` : "";
 
         if (result.chance === 1) {
-             return `guaranteed ${hkoText}${berryText}`;
+          return `guaranteed ${hkoText}${berryText}${eotText}`;
         }
         
         const percentage = Math.max(Math.min(Math.round(result.chance * 1000), 999), 1) / 10;
-        return `${percentage}% chance to ${hkoText}${berryText}`;
+        return `${percentage}% chance to ${hkoText}${berryText}${eotText}`;
       }
     }
 
