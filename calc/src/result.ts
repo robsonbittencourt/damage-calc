@@ -14,6 +14,7 @@ export class Result {
   field: Field;
   damage: number | number[] | number[][];
   rawDesc: RawDesc;
+  berryHP?: number;
 
   constructor(
     gen: Generation,
@@ -23,6 +24,7 @@ export class Result {
     field: Field,
     damage: Damage,
     rawDesc: RawDesc,
+    berryHP?: number,
   ) {
     this.gen = gen;
     this.attacker = attacker;
@@ -31,6 +33,7 @@ export class Result {
     this.field = field;
     this.damage = damage;
     this.rawDesc = rawDesc;
+    this.berryHP = berryHP;
   }
 
   /* get */ desc() {
@@ -76,6 +79,7 @@ export class Result {
       this.move,
       this.field,
       this.damage,
+      this.rawDesc,
       err
     );
   }
