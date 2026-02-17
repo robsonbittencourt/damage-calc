@@ -1,0 +1,227 @@
+import { Result } from './result';
+import { Pokemon } from './pokemon';
+import { StatID } from './data/interface';
+import { computeMultiHitKOChance, getBerryRecovery } from './desc';
+
+export class MultiResult {
+  constructor(
+    public results: Result[],
+    public koChance: { chance: number; n: number; text: string; berryConsumed: boolean }
+  ) {}
+
+  public getHKO(): string {
+    if (this.koChance.chance === 1 || this.koChance.n === 1) {
+        return this.koChance.text;
+    }
+
+    const target = this.results[0].defender;
+    const gen = this.results[0].gen;
+
+    const baseDamages: number[][] = [];
+    const baseBerryRecovery: number[] = [];
+    const baseBerryThreshold: number[] = [];
+
+    for (const result of this.results) {
+        const damage = this.extractDamageSubArrays(result.damage);
+        const berry = getBerryRecovery(result.attacker, target, gen, result.move);
+        
+        baseDamages.push(...damage);
+        for(let k=0; k < damage.length; k++) {
+             baseBerryRecovery.push(berry.recovery);
+             baseBerryThreshold.push(berry.threshold);
+        }
+    }
+
+    for (let i = 1; i <= 9; i++) {
+      const currentDamages: number[][] = [];
+      const currentBerryRecovery: number[] = [];
+      const currentBerryThreshold: number[] = [];
+
+      for (let j = 0; j < i; j++) {
+        currentDamages.push(...baseDamages);
+        currentBerryRecovery.push(...baseBerryRecovery);
+        currentBerryThreshold.push(...baseBerryThreshold);
+      }
+
+      const result = computeMultiHitKOChance(currentDamages, target.maxHP(), 0, target.curHP(), currentBerryRecovery, currentBerryThreshold);
+
+      if (result.chance > 0) {
+        const hkoText = i === 1 ? "OHKO" : `${i}HKO`;
+        const berryText = result.berryConsumed ? ` after ${target.item} recovery` : ""; 
+
+        if (result.chance === 1) {
+             return `guaranteed ${hkoText}${berryText}`;
+        }
+        
+        const percentage = Math.max(Math.min(Math.round(result.chance * 1000), 999), 1) / 10;
+        return `${percentage}% chance to ${hkoText}${berryText}`;
+      }
+    }
+
+    return "10HKO or more";
+  }
+
+  public range(): { min: number; max: number } {
+    let min = 0;
+    let max = 0;
+
+    for (const result of this.results) {
+      const damage = this.extractDamageSubArrays(result.damage);
+      const r = this.getMinMaxDamageFromRolls(damage);
+      min += r.min;
+      max += r.max;
+    }
+
+    return { min, max };
+  }
+
+  public rangePercentage(): { min: number; max: number } {
+    const { min, max } = this.range();
+    const defender = this.results[0].defender;
+
+    return {
+      min: Math.floor((min / defender.originalCurHP) * 1000) / 10,
+      max: Math.floor((max / defender.originalCurHP) * 1000) / 10
+    };
+  }
+
+  public resultString(): string {
+    const { min, max } = this.rangePercentage();
+    return `${min} - ${max}%`;
+  }
+
+  desc(): string {
+    if (this.results.length < 2) {
+      return this.results[0]?.desc() || "No result";
+    }
+
+    const resultOne = this.results[0];
+    const resultTwo = this.results[1];
+    const defender = resultOne.defender;
+
+    try {
+      const attackerDescription = resultOne.desc().substring(0, resultOne.desc().indexOf(" vs."));
+      const secondAttackerDescritption = resultTwo.desc().substring(0, resultTwo.desc().indexOf(" vs."));
+      const defenderDescription = resultOne.desc().substring(resultOne.desc().indexOf(" vs.") + 5);
+
+      const defenderBulk = this.mergeBulkStats(resultOne, resultTwo, defender);
+      const tera = resultOne.defender.teraType ? `Tera ${resultOne.defender.teraType} ` : "";
+      const defenderNameAndDamageString = defenderDescription.substring(defenderDescription.indexOf(resultOne.defender.name));
+
+      const { min: totalMin, max: totalMax } = this.range();
+      const { min: minPercent, max: maxPercent } = this.rangePercentage();
+
+      const defenderNameAndDamage = this.updateDefenderDamageText(defenderNameAndDamageString, totalMin, totalMax, minPercent, maxPercent);
+
+      const koChanceText = this.getHKO();
+
+      if (koChanceText) {
+        const baseText = defenderNameAndDamage.includes(" -- ") ? defenderNameAndDamage.substring(0, defenderNameAndDamage.indexOf(" -- ")) : defenderNameAndDamage;
+
+        return `${attackerDescription} AND ${secondAttackerDescritption} vs. ${defenderBulk} ${tera}${baseText} -- ${koChanceText}`;
+      }
+
+      return `${attackerDescription} AND ${secondAttackerDescritption} vs. ${defenderBulk} ${tera}${defenderNameAndDamage}`;
+    } catch (e) {
+      return `${resultOne.attacker.name} ${resultOne.move.name} AND ${resultTwo.attacker.name} ${resultTwo.move.name} vs. ${resultOne.defender.name}: 0-0 (0 - 0%) -- possibly the worst move ever`;
+    }
+  }
+
+  private mergeBulkStats(resultOne: Result, resultTwo: Result, defender: Pokemon): string {
+    const resultOneDefenderDesc = resultOne.desc().substring(resultOne.desc().indexOf(" vs.") + 5);
+    const resultTwoDefenderDesc = resultTwo.desc().substring(resultTwo.desc().indexOf(" vs.") + 5);
+
+    let output = `${resultOne.defender.evs.hp} HP`;
+
+    output += this.modifyStat(defender, resultOneDefenderDesc, resultTwoDefenderDesc, "def", "Def");
+    output += this.modifyStat(defender, resultOneDefenderDesc, resultTwoDefenderDesc, "spd", "SpD");
+
+    if (resultOneDefenderDesc.includes(resultOne.defender.item!) || resultTwoDefenderDesc.includes(resultTwo.defender.item!)) {
+      output += ` ${resultOne.defender.item}`;
+    }
+
+    return output;
+  }
+
+  private modifyStat(defender: Pokemon, resultOneDefenderDesc: string, resultTwoDefenderDesc: string, stat: StatID, statText: string) {
+    let output = "";
+
+    if (resultOneDefenderDesc.includes(statText) || resultTwoDefenderDesc.includes(statText)) {
+      output += ` /`;
+      output += this.boostByStat(defender, stat);
+      output += ` ${defender.evs[stat]}`;
+      output += this.natureModifier(defender, stat);
+      output += ` ${statText}`;
+    }
+
+    return output;
+  }
+
+  private boostByStat(pokemon: Pokemon, stat: StatID): string {
+    if (pokemon.boosts[stat] && pokemon.boosts[stat] > 0) {
+      return ` +${pokemon.boosts[stat]}`;
+    }
+
+    if (pokemon.boosts[stat] && pokemon.boosts[stat] < 0) {
+      return ` ${pokemon.boosts[stat]}`;
+    }
+
+    return "";
+  }
+
+  private natureModifier(pokemon: Pokemon, stat: StatID) {
+    if (stat === "def" && ["Bold", "Impish", "Lax", "Relaxed"].includes(pokemon.nature)) return "+";
+    if (stat === "def" && ["Lonely", "Mild", "Gentle", "Hasty"].includes(pokemon.nature)) return "-";
+
+    if (stat === "spd" && ["Calm", "Gentle", "Careful", "Sassy"].includes(pokemon.nature)) return "+";
+    if (stat === "spd" && ["Naughty", "Lax", "Rash", "Naive"].includes(pokemon.nature)) return "-";
+
+    return "";
+  }
+
+  private extractDamageSubArrays(damage: number | number[] | number[][]): number[][] {
+     if (typeof damage === 'number') {
+        return [[damage]];
+     }
+     if (Array.isArray(damage)) {
+        if (damage.length === 0) return [];
+        if (Array.isArray(damage[0])) {
+           return damage as number[][];
+        }
+        return [damage as number[]];
+     }
+     return [];
+  }
+
+  private getMinMaxDamageFromRolls(rolls: number[][]): { min: number; max: number } {
+    let min = 0;
+    let max = 0;
+
+    for (const sub of rolls) {
+      if (sub.length > 0) {
+          min += sub[0];
+          max += sub[sub.length - 1];
+      }
+    }
+
+    return { min, max };
+  }
+
+  private updateDefenderDamageText(text: string, totalMin: number, totalMax: number, minPercent: number, maxPercent: number): string {
+    const lastColonIndex = text.lastIndexOf(":");
+
+    if (lastColonIndex !== -1) {
+      const prefix = text.substring(0, lastColonIndex);
+      return `${prefix}: ${totalMin}-${totalMax} (${minPercent} - ${maxPercent}%)`;
+    }
+
+    const regex = /: \d+-\d+ \(\d+(\.\d+)? - \d+(\.\d+)?%\)/;
+
+    if (regex.test(text)) {
+      return text.replace(regex, `: ${totalMin}-${totalMax} (${minPercent} - ${maxPercent}%)`);
+    }
+
+    return text;
+  }
+
+}
