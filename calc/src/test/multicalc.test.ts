@@ -336,7 +336,7 @@ describe('multicalc', () => {
       expect(afterTurn.remainingHpUntilTurn(2)).toBe(60);
       expect(afterTurn.remainingHpUntilTurn(3)).toBe(0);
       expect(afterTurn.residualHpInTurn(3)).toBe(0);
-      expect(multiResult.maxDamageWithRemainingUntilTurn(3)).toBe(176);
+      expect(multiResult.damageWithRemainingUntilTurn(3)).toBe(176);
     });
   });
 });

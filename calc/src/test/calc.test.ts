@@ -2039,7 +2039,7 @@ describe('calc', () => {
         expect(result.afterTurn().remainingHpUntilTurn(2)).toBe(60);
         expect(result.afterTurn().remainingHpUntilTurn(3)).toBe(0);
         expect(result.afterTurn().residualHpInTurn(3)).toBe(0);
-        expect(result.maxDamageWithRemainingUntilTurn(3)).toBe(176);
+        expect(result.damageWithRemainingUntilTurn(3)).toBe(176);
       });
 
       test('should apply two residual damage in the same turn', () => {

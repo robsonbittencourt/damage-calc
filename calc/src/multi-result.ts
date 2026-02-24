@@ -1,4 +1,10 @@
-import {type Result, AfterTurnResult, type AfterTurnData, extractDamageSubArrays} from './result';
+import {
+  type Result,
+  AfterTurnResult,
+  type AfterTurnData,
+  extractDamageSubArrays,
+  DEFAULT_ROLL_INDEX,
+} from './result';
 import type {Pokemon} from './pokemon';
 import type {StatID} from './data/interface';
 import {
@@ -37,7 +43,7 @@ export class MultiResult {
     this.eot = eot;
   }
 
-  afterTurn(): AfterTurnResult {
+  afterTurn(rollIndex = DEFAULT_ROLL_INDEX): AfterTurnResult {
     const gen = this.results[0].gen;
     const defender = this.results[0].defender;
     const field = this.results[0].field;
@@ -77,12 +83,17 @@ export class MultiResult {
     let currentHP = hp;
     let berryConsumed = false;
 
-    const maxDamages = this.results.map((r) => r.maxDamage());
+    const damagesAtIndex = this.results.map(r => {
+      const subArrays = extractDamageSubArrays(r.damage);
+      if (subArrays.length === 0) return 0;
+      const flat = subArrays.map(arr => arr[Math.min(rollIndex, arr.length - 1)]);
+      return flat.reduce((a, b) => a + b, 0);
+    });
 
     for (let i = 1; i <= 10; i++) {
       let turnValue = 0;
 
-      for (const dmg of maxDamages) {
+      for (const dmg of damagesAtIndex) {
         currentHP -= dmg;
 
         if (
@@ -288,9 +299,9 @@ export class MultiResult {
     return this.range().max;
   }
 
-  maxDamageWithRemainingUntilTurn(turn: number): number {
+  damageWithRemainingUntilTurn(turn: number, rollIndex = DEFAULT_ROLL_INDEX): number {
     const hp = this.defender.curHP();
-    const remainingHp = this.afterTurn().remainingHpUntilTurn(turn);
+    const remainingHp = this.afterTurn(rollIndex).remainingHpUntilTurn(turn);
 
     return hp - remainingHp;
   }

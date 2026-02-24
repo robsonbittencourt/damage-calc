@@ -42,6 +42,8 @@ export class AfterTurnResult {
   }
 }
 
+export const DEFAULT_ROLL_INDEX = 15;
+
 export class Result {
   gen: Generation;
   attacker: Pokemon;
@@ -74,12 +76,8 @@ export class Result {
     this._berryHP = berryHP;
   }
 
-  afterTurn(): AfterTurnResult {
-    const range = multiDamageRange(this.damage);
-    const hitsMax =
-      typeof range[0] === 'number'
-        ? [range[1] as number]
-        : (range[1] as number[]);
+  afterTurn(rollIndex = DEFAULT_ROLL_INDEX): AfterTurnResult {
+    const hitsAtIndex = this.getHitsAtIndex(rollIndex);
     const minDamageTotal = damageRange(this.damage)[0];
     const hp = this.defender.curHP();
 
@@ -106,11 +104,11 @@ export class Result {
     let currentHP = hp;
     let firstBerryTurn = 0;
 
-    if (hitsMax.some((h) => h > 0)) {
+    if (hitsAtIndex.some((h) => h > 0)) {
       for (let i = 1; i <= 10; i++) {
         let turnValue = 0;
 
-        for (const hitDamage of hitsMax) {
+        for (const hitDamage of hitsAtIndex) {
           currentHP -= hitDamage;
 
           if (
@@ -158,6 +156,13 @@ export class Result {
     }
 
     return new AfterTurnResult(data);
+  }
+
+  private getHitsAtIndex(rollIndex: number): number[] {
+    const subArrays = extractDamageSubArrays(this.damage);
+    if (subArrays.length === 0) return [];
+
+    return subArrays.map(arr => arr[Math.min(rollIndex, arr.length - 1)]);
   }
 
   /* get */ desc() {
@@ -233,9 +238,9 @@ export class Result {
     return this.range()[1];
   }
 
-  maxDamageWithRemainingUntilTurn(turn: number): number {
+  damageWithRemainingUntilTurn(turn: number, rollIndex = DEFAULT_ROLL_INDEX): number {
     const hp = this.defender.curHP();
-    const remainingHp = this.afterTurn().remainingHpUntilTurn(turn);
+    const remainingHp = this.afterTurn(rollIndex).remainingHpUntilTurn(turn);
 
     return hp - remainingHp;
   }
