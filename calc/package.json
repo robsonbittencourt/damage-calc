@@ -1,6 +1,6 @@
 {
   "name": "@robsonbittencourt/calc",
-  "version": "0.10.4",
+  "version": "0.10.6",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "unpkg": "dist/production.min.js",
