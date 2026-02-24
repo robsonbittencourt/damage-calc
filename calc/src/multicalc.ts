@@ -1,20 +1,30 @@
-
 import {calculate} from './calc';
 import type {Pokemon} from './pokemon';
 import type {Move} from './move';
 import type {Field} from './field';
 import type {Result} from './result';
 import type {Generation} from './data/interface';
-import { computeMultiHitKOChance, getBerryRecovery, getEndOfTurn } from './desc';
+import {
+  computeMultiHitKOChance,
+  getBerryRecovery,
+  getEndOfTurn,
+} from './desc';
 
-import { MultiResult } from './multi-result';
+import {MultiResult} from './multi-result';
+
+function updateDefenderHP(defender: Pokemon, nextHP: number, maxHP: number) {
+  const percentage = (nextHP / maxHP) * 100;
+  defender.originalCurHP = Math.round(
+    (defender.maxHP(true) * percentage) / 100,
+  );
+}
 
 export function calculateMulti(
   gen: Generation,
   attackers: Pokemon[],
   defender: Pokemon,
   moves: Move[],
-  field: Field
+  field: Field,
 ): MultiResult {
   const results: Result[] = [];
   const currentDefender = defender.clone();
@@ -35,7 +45,7 @@ export function calculateMulti(
       damageArrays.push(Array(16).fill(result.damage));
     } else if (Array.isArray(result.damage)) {
       if (result.damage.length > 0 && Array.isArray(result.damage[0])) {
-        (result.damage as number[][]).forEach(r => damageArrays.push(r));
+        (result.damage as number[][]).forEach((r) => damageArrays.push(r));
       } else {
         damageArrays.push(result.damage as number[]);
       }
@@ -58,7 +68,10 @@ export function calculateMulti(
       result.damage.length > 0 &&
       Array.isArray(result.damage[0])
     ) {
-      maxDamage = (result.damage as number[][]).reduce((sum, rolls) => sum + rolls[15], 0);
+      maxDamage = (result.damage as number[][]).reduce(
+        (sum, rolls) => sum + rolls[15],
+        0,
+      );
     } else if (Array.isArray(result.damage)) {
       maxDamage = (result.damage as number[])[15];
     }
@@ -70,20 +83,31 @@ export function calculateMulti(
         ? result.damage.length
         : 1;
 
-    if (!berryConsumed && recovery > 0) {
-      const currentHP = currentDefender.curHP();
-      const maxHP = currentDefender.maxHP();
+    const currentHP = currentDefender.curHP();
+    const maxHP = currentDefender.maxHP();
 
+    if (!berryConsumed && recovery > 0) {
       if (currentHP - maxDamage <= threshold) {
         berryConsumed = true;
         currentDefender.item = undefined;
-        currentDefender.originalCurHP = Math.min(maxHP, currentHP - maxDamage + recovery);
-        result.berryHP = recovery;
+        updateDefenderHP(
+          currentDefender,
+          Math.min(maxHP, currentHP - maxDamage + recovery),
+          maxHP,
+        );
       } else {
-        currentDefender.originalCurHP = Math.max(0, currentHP - maxDamage);
+        updateDefenderHP(
+          currentDefender,
+          Math.max(0, currentHP - maxDamage),
+          maxHP,
+        );
       }
     } else {
-      currentDefender.originalCurHP = Math.max(0, currentDefender.curHP() - maxDamage);
+      updateDefenderHP(
+        currentDefender,
+        Math.max(0, currentHP - maxDamage),
+        maxHP,
+      );
     }
 
     for (let k = 0; k < hitsAdded; k++) {
@@ -132,23 +156,39 @@ export function calculateMulti(
       currentBerryRecoveries,
       currentBerryThresholds,
       rowsPerTurn,
-      toxicCounter
+      toxicCounter,
     );
 
     if (result.chance === 1) {
-      koChance = {chance: 1, n: i, text: '', berryConsumed: result.berryConsumed};
-      const hkoText = i === 1 ? 'OHKO' : `${i}HKO`;
-      const berryText = result.berryConsumed ? ` after ${defender.item} recovery` : '';
+      koChance = {
+        chance: 1,
+        n: i,
+        text: '',
+        berryConsumed: result.berryConsumed,
+      };
+      const turns = Math.ceil(i / rowsPerTurn);
+      const hkoText = turns === 1 ? 'OHKO' : `${turns}HKO`;
+      const berryText = result.berryConsumed
+        ? ` after ${defender.item} recovery`
+        : '';
       koChance.text = `guaranteed ${hkoText}${berryText}`;
       break;
     }
 
     if (i === attackers.length) {
-      koChance = {chance: result.chance, n: i, text: '', berryConsumed: result.berryConsumed};
+      koChance = {
+        chance: result.chance,
+        n: i,
+        text: '',
+        berryConsumed: result.berryConsumed,
+      };
       if (result.chance > 0) {
         const hkoText = i === 1 ? 'OHKO' : `${i}HKO`;
-        const berryText = result.berryConsumed ? ` after ${defender.item} recovery` : '';
-        const percentage = Math.max(Math.min(Math.round(result.chance * 1000), 999), 1) / 10;
+        const berryText = result.berryConsumed
+          ? ` after ${defender.item} recovery`
+          : '';
+        const percentage =
+          Math.max(Math.min(Math.round(result.chance * 1000), 999), 1) / 10;
         koChance.text = `${percentage}% chance to ${hkoText}${berryText}`;
       } else {
         koChance.text = 'possibly the worst move ever';
@@ -157,5 +197,5 @@ export function calculateMulti(
   }
 
   const finalEot = getEndOfTurn(gen, attackers[0], defender, moves[0], field);
-  return new MultiResult(results, koChance, finalEot);
+  return new MultiResult(defender, results, koChance, finalEot);
 }

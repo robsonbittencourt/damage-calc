@@ -279,11 +279,11 @@ export function getKOChance(
   const [damage, approximate] = combine(damageObj);
   if (isNaN(damage[0])) {
     error(err, 'damage[0] must be a number.');
-    return {chance: 0, n: 0, text: ''};
+    return {chance: 0, n: 0, text: '', berryConsumed: false};
   }
   if (damage[damage.length - 1] === 0) {
     error(err, 'damage[damage.length - 1] === 0.');
-    return {chance: 0, n: 0, text: ''};
+    return {chance: 0, n: 0, text: '', berryConsumed: false};
   }
 
   // Code doesn't really work if these aren't set.
@@ -295,7 +295,7 @@ export function getKOChance(
     move.timesUsedWithMetronome === 1 &&
     move.hits === 1
   ) {
-    return {chance: 1, n: 1, text: 'guaranteed OHKO'};
+    return {chance: 1, n: 1, text: 'guaranteed OHKO', berryConsumed: false};
   }
 
   const hazards = getHazards(gen, defender, field.defenderSide);
@@ -342,6 +342,8 @@ export function getKOChance(
     n: number,
     multipleTurns = false,
     berryRelevant = false,
+    firstBerryTurn?: number,
+    anyBerryConsumed = false,
   ) {
     const combinedTexts = hazards.texts.concat(eot.texts);
     if (berryRelevant && berryText) combinedTexts.push(berryText);
@@ -403,7 +405,7 @@ export function getKOChance(
         text += `${roundChance(chanceWithEot)}% chance to ${KOTurnText}${afterText}`;
       }
     }
-    return {chance, n, text};
+    return {chance, n, text, berryConsumed: berryRelevant, anyBerryConsumed, firstBerryTurn};
   }
 
   if ((move.timesUsed === 1 && move.timesUsedWithMetronome === 1) || move.isZ) {
@@ -411,7 +413,8 @@ export function getKOChance(
     let hasOHKOChance = false;
     let berryConsumed = false;
 
-    if (move.hits > 1 && hits === 1 && damageObj && Array.isArray(damageObj) && Array.isArray(damageObj[0])) {
+    if (move.hits > 1 && hits === 1 && damageObj &&
+      Array.isArray(damageObj) && Array.isArray(damageObj[0])) {
       const damageMatrix = damageObj as number[][];
 
       if (damageMatrix.length > 1) {
@@ -427,12 +430,14 @@ export function getKOChance(
         if (res.chance + resWithEot.chance > 0) {
           return KOChance(
             res.chance, resWithEot.chance, 1, false,
-            res.berryConsumed || resWithEot.berryConsumed
+            res.berryConsumed || resWithEot.berryConsumed,
+            res.firstBerryTurn || resWithEot.firstBerryTurn,
+            res.anyBerryConsumed || resWithEot.anyBerryConsumed
           );
         }
 
         if (res.berryConsumed || resWithEot.berryConsumed) {
-          hasOHKOChance = true; 
+          hasOHKOChance = true;
           berryConsumed = true;
         }
 
@@ -455,7 +460,9 @@ export function getKOChance(
       if (res.chance + resWithEot.chance > 0) {
         return KOChance(
           res.chance, resWithEot.chance, 1, false,
-          res.berryConsumed || resWithEot.berryConsumed
+          res.berryConsumed || resWithEot.berryConsumed,
+          res.firstBerryTurn || resWithEot.firstBerryTurn,
+          res.anyBerryConsumed || resWithEot.anyBerryConsumed
         );
       }
     }
@@ -469,7 +476,9 @@ export function getKOChance(
 
       if (res.chance > 0) {
         return KOChance(
-          0, res.chance, i, false, res.berryConsumed || berryConsumed
+          0, res.chance, i, false, res.berryConsumed || berryConsumed,
+          res.firstBerryTurn || (berryConsumed ? 1 : undefined),
+          res.anyBerryConsumed || berryConsumed
         );
       }
     }
@@ -506,7 +515,8 @@ export function getKOChance(
 
     if (res.chance > 0) {
       return KOChance(
-        0, res.chance, timesUsed, res.chance === 1, res.berryConsumed
+        0, res.chance, timesUsed, res.chance === 1, res.berryConsumed, res.firstBerryTurn,
+        res.anyBerryConsumed
       );
     }
 
@@ -533,7 +543,10 @@ export function getKOChance(
     return KOChance(0, 0, timesUsed);
   }
 
-  return {chance: 0, n: 0, text: ''};
+  return {
+    chance: 0, n: 0, text: '', berryConsumed: false,
+    anyBerryConsumed: false, firstBerryTurn: undefined,
+  };
 }
 
 export function computeMultiHitKOChance(
@@ -545,17 +558,19 @@ export function computeMultiHitKOChance(
   berryThreshold: number | number[] = 0,
   rowsPerTurn?: number,
   toxicCounter = 0
-): { chance: number; berryConsumed: boolean } {
+): { chance: number; berryConsumed: boolean; anyBerryConsumed: boolean; firstBerryTurn?: number } {
   let state = new Map<number, number>();
   let stateBerry = new Map<number, number>();
 
   const startHP = Math.min(maxHP, Math.max(0, hp));
-  if (startHP <= 0) return {chance: 1, berryConsumed: false};
+  if (startHP <= 0) return {chance: 1, berryConsumed: false, anyBerryConsumed: false};
 
   state.set(startHP, 1);
 
   let koChance = 0;
-  let berryConsumed = false;
+  let firstBerryTurn: number | undefined;
+  let berryConsumedInKO = false;
+  let anyBerryConsumed = false;
 
   for (let i = 0; i < damageMatrix.length; i++) {
     const damageRow = damageMatrix[i];
@@ -578,7 +593,8 @@ export function computeMultiHitKOChance(
           nextHP += currentRecovery;
           if (nextHP > maxHP) nextHP = maxHP;
           nextStateBerry.set(nextHP, (nextStateBerry.get(nextHP) || 0) + prob);
-          berryConsumed = true;
+          anyBerryConsumed = true;
+          if (firstBerryTurn === undefined) firstBerryTurn = i + 1;
         } else if (nextHP <= 0) {
           koChance += prob;
         } else {
@@ -597,7 +613,7 @@ export function computeMultiHitKOChance(
 
         if (nextHP <= 0) {
           koChance += prob;
-          berryConsumed = true;
+          berryConsumedInKO = true;
         } else {
           nextStateBerry.set(nextHP, (nextStateBerry.get(nextHP) || 0) + prob);
         }
@@ -606,6 +622,8 @@ export function computeMultiHitKOChance(
 
     state = nextState;
     stateBerry = nextStateBerry;
+
+    if (anyBerryConsumed && firstBerryTurn === undefined) firstBerryTurn = i + 1;
 
     if (rowsPerTurn && (i + 1) % rowsPerTurn === 0) {
       let toxicDamage = 0;
@@ -625,9 +643,9 @@ export function computeMultiHitKOChance(
         const nextStateEot = new Map<number, number>();
         const nextStateBerryEot = new Map<number, number>();
 
-        const stateEntries = Array.from(state.entries());
-        for (let j = 0; j < stateEntries.length; j++) {
-          const [currentHP, currentProb] = stateEntries[j];
+        const stateEntriesEot = Array.from(state.entries());
+        for (let j = 0; j < stateEntriesEot.length; j++) {
+          const [currentHP, currentProb] = stateEntriesEot[j];
           let nextHP = currentHP + turnEot;
           if (nextHP <= 0) {
             koChance += currentProb;
@@ -637,13 +655,13 @@ export function computeMultiHitKOChance(
           }
         }
 
-        const stateBerryEntries = Array.from(stateBerry.entries());
-        for (let j = 0; j < stateBerryEntries.length; j++) {
-          const [currentHP, currentProb] = stateBerryEntries[j];
+        const stateBerryEntriesEot = Array.from(stateBerry.entries());
+        for (let j = 0; j < stateBerryEntriesEot.length; j++) {
+          const [currentHP, currentProb] = stateBerryEntriesEot[j];
           let nextHP = currentHP + turnEot;
           if (nextHP <= 0) {
             koChance += currentProb;
-            berryConsumed = true;
+            berryConsumedInKO = true;
           } else {
             if (nextHP > maxHP) nextHP = maxHP;
             nextStateBerryEot.set(nextHP, (nextStateBerryEot.get(nextHP) || 0) + currentProb);
@@ -657,49 +675,62 @@ export function computeMultiHitKOChance(
   }
 
   if (!rowsPerTurn && eot !== 0) {
-    const stateEntries = Array.from(state.entries());
-    for (let i = 0; i < stateEntries.length; i++) {
-      const [currentHP, currentProb] = stateEntries[i];
+    const finalState = new Map<number, number>();
+    const finalStateBerry = new Map<number, number>();
+
+    const stateEntriesOuter = Array.from(state.entries());
+    for (let i = 0; i < stateEntriesOuter.length; i++) {
+      const [currentHP, currentProb] = stateEntriesOuter[i];
       let nextHP = currentHP + eot;
       if (nextHP <= 0) {
         koChance += currentProb;
       } else if (
         (Array.isArray(berryRecovery) ? berryRecovery[0] : berryRecovery) > 0 &&
-        nextHP <= (Array.isArray(berryThreshold) ? berryThreshold[0] : berryThreshold)
+        nextHP <= (Array.isArray(berryThreshold) ? berryThreshold[0] : berryThreshold) &&
+        nextHP > 0
       ) {
         nextHP += (Array.isArray(berryRecovery) ? berryRecovery[0] : berryRecovery);
         if (nextHP > maxHP) nextHP = maxHP;
-        berryConsumed = true;
+        anyBerryConsumed = true;
+        if (firstBerryTurn === undefined) firstBerryTurn = 1;
+        finalStateBerry.set(nextHP, (finalStateBerry.get(nextHP) || 0) + currentProb);
+      } else {
+        if (nextHP > maxHP) nextHP = maxHP;
+        finalState.set(nextHP, (finalState.get(nextHP) || 0) + currentProb);
       }
     }
 
-    const stateBerryEntries = Array.from(stateBerry.entries());
-    for (let i = 0; i < stateBerryEntries.length; i++) {
-      const [currentHP, currentProb] = stateBerryEntries[i];
+    const stateBerryEntriesOuter = Array.from(stateBerry.entries());
+    for (let i = 0; i < stateBerryEntriesOuter.length; i++) {
+      const [currentHP, currentProb] = stateBerryEntriesOuter[i];
       const nextHP = currentHP + eot;
       if (nextHP <= 0) {
         koChance += currentProb;
-        berryConsumed = true;
+        berryConsumedInKO = true;
+      } else {
+        const h = Math.min(maxHP, nextHP);
+        finalStateBerry.set(h, (finalStateBerry.get(h) || 0) + currentProb);
       }
     }
+
+    state = finalState;
+    stateBerry = finalStateBerry;
   }
 
-  return {chance: koChance, berryConsumed};
+  if (anyBerryConsumed && firstBerryTurn === undefined) firstBerryTurn = 1;
+  return {chance: koChance, berryConsumed: berryConsumedInKO, anyBerryConsumed, firstBerryTurn};
 }
 
 function combine(damage: Damage): [number[], boolean] {
-  // Fixed Damage
   if (typeof damage === 'number') return [[damage], false];
+  const damageArray = damage as any[];
+  if (damageArray.length >= 16 && typeof damageArray[0] === 'number') {
+    return [damageArray as number[], false];
+  }
 
-  // Standard Damage (16 or 39 rolls)
-  if (damage.length >= 16 && typeof damage[0] === 'number') {
-    return [damage as number[], false];
+  if (typeof damageArray[0] === 'number' && typeof damageArray[1] === 'number') {
+    return [[damageArray[0] + damageArray[1]], false];
   }
-  // Fixed Multi-hit Damage (currently only parental bond)
-  if (typeof damage[0] === 'number' && typeof damage[1] === 'number') {
-    return [[damage[0] + damage[1]], false];
-  }
-  // Multi-hit Damage
 
   // Reduce Distribution to be at most 256 elements, maintains min and max
   function reduce(dist: number[], scaleValue: number): number[] {
@@ -1057,7 +1088,7 @@ function computeKOChance(
   berryThreshold = 0,
   berryConsumed = false,
   damageWithoutBerry?: number[]
-): { chance: number; berryConsumed: boolean } {
+): { chance: number; berryConsumed: boolean; anyBerryConsumed: boolean; firstBerryTurn?: number } {
   let toxicDamage = 0;
   if (toxicCounter > 0) {
     toxicDamage = Math.floor((toxicCounter * maxHP) / 16);
@@ -1076,6 +1107,8 @@ function computeKOChance(
 
     let totalChance = 0;
     let anyBerryConsumed = false;
+    let berryConsumedInKO = false;
+    let firstBerryTurn: number | undefined;
 
     for (let i = 0; i < n; i++) {
       let hpAfterDamage = hp - damage[i];
@@ -1093,23 +1126,35 @@ function computeKOChance(
         consumedNow = true;
       }
 
+      if (consumedNow) {
+        anyBerryConsumed = true;
+        if (firstBerryTurn === undefined) firstBerryTurn = 1;
+      }
+
       if (hpAfterDamage + eot - toxicDamage <= 0) {
         totalChance += 1;
-        if (consumedNow) anyBerryConsumed = true;
+        if (consumedNow) berryConsumedInKO = true;
       }
     }
 
-    return {chance: totalChance / n, berryConsumed: anyBerryConsumed};
+    return {
+      chance: totalChance / n, berryConsumed: berryConsumedInKO,
+      anyBerryConsumed, firstBerryTurn,
+    };
   }
 
   let sum = 0;
   let lastc = 0;
   let lastBerry = false;
+  let lastTurn: number | undefined;
   let anyBerryConsumed = false;
+  let berryConsumedInKO = false;
+  let firstBerryTurn: number | undefined;
 
   for (let i = 0; i < n; i++) {
     let c;
     let berry;
+    let turn: number | undefined;
     if (i === 0 || damage[i] !== damage[i - 1]) {
       let hpAfterDamage = hp - damage[i];
       let consumed = berryConsumed;
@@ -1138,17 +1183,35 @@ function computeKOChance(
       );
       c = result.chance;
       berry = result.berryConsumed;
+      const anyBerry = result.anyBerryConsumed;
+
+      if (hp - damage[i] <= berryThreshold) {
+        turn = 1;
+      } else if (result.firstBerryTurn !== undefined) {
+        turn = result.firstBerryTurn + 1;
+      }
+
+      if (anyBerry) {
+        anyBerryConsumed = true;
+        if (turn !== undefined && (firstBerryTurn === undefined || turn < firstBerryTurn)) {
+          firstBerryTurn = turn;
+        }
+      }
+      if (berry) berryConsumedInKO = true;
     } else {
       c = lastc;
       berry = lastBerry;
+      turn = lastTurn;
     }
+
     sum += c;
-    if (c > 0 && berry) anyBerryConsumed = true;
 
     lastc = c;
     lastBerry = berry;
+    lastTurn = turn;
   }
-  return {chance: sum / n, berryConsumed: anyBerryConsumed};
+
+  return {chance: sum / n, berryConsumed: berryConsumedInKO, anyBerryConsumed, firstBerryTurn};
 }
 
 function predictTotal(

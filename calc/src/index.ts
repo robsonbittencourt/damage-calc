@@ -141,13 +141,15 @@ export function calcStat(
 }
 
 export {Field, Side} from './field';
-export { calculateMulti } from './multicalc';
-export { Result } from './result';
-export { MultiResult } from './multi-result';
+export {calculateMulti} from './multicalc';
+export {Result, extractDamageSubArrays} from './result';
+export {MultiResult} from './multi-result';
 export {type GenerationNum, type StatsTable, type StatID} from './data/interface';
 export {Generations} from './data/index';
 export {toID} from './util';
-export { getBerryRecovery, computeMultiHitKOChance, getEndOfTurn, serializeEndOfTurnTexts } from './desc';
+export {
+  getBerryRecovery, computeMultiHitKOChance, getEndOfTurn, serializeEndOfTurnTexts,
+} from './desc';
 export {type State} from './state';
 
 export {ABILITIES} from './data/abilities';

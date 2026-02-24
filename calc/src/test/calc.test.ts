@@ -1806,6 +1806,367 @@ describe('calc', () => {
           expect(ragingBullResult.range()[1]).toBeGreaterThan(otherMoveResult.range()[1]);
         });
       });
+
+      inGen(9, ({calculate, Pokemon, Move}) => {
+        test('afterDamageTotal with Leftovers', () => {
+          const attacker = Pokemon('Urshifu-Rapid-Strike', {
+            level: 50,
+            nature: 'Adamant',
+          });
+
+          const defender = Pokemon('Raging Bolt', {
+            level: 50,
+            item: 'Leftovers',
+            evs: {hp: 196, def: 132},
+          });
+
+          const move = Move('Close Combat');
+
+          const result = calculate(attacker, defender, move);
+
+          expect(result.afterTurn().totalResidualHpUntilKO()).toBe(28);
+        });
+
+        test('afterDamageTotal with trapping damage (KO by hit)', () => {
+          const attacker = Pokemon('Heatran', {
+            level: 50,
+            nature: 'Adamant',
+            item: 'Choice Specs',
+          });
+
+          const defender = Pokemon('Weezing-Galar', {
+            level: 50,
+            evs: {hp: 252, spd: 132},
+          });
+
+          const move = Move('Magma Storm');
+
+          const result = calculate(attacker, defender, move);
+
+          expect(result.afterTurn().totalResidualHpUntilKO()).toBe(-21);
+        });
+
+        test('afterDamageTotal with trapping damage (KO by trap)', () => {
+          const attacker = Pokemon('Heatran', {
+            level: 50,
+            nature: 'Adamant',
+          });
+
+          const defender = Pokemon('Weezing-Galar', {
+            level: 50,
+            evs: {hp: 252, spd: 132},
+          });
+
+          const move = Move('Magma Storm');
+
+          const result = calculate(attacker, defender, move);
+
+          expect(result.afterTurn().totalResidualHpUntilKO()).toBe(-21);
+        });
+      });
+    });
+  });
+
+  describe('Result.afterTurn', () => {
+    inGen(9, ({calculate, Pokemon, Move, Field}) => {
+      test('should show EOT + Sitrus Berry recovery when surviving Turn 1', () => {
+        const attacker = Pokemon('Urshifu-Rapid-Strike', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {atk: 252},
+          item: 'Mystic Water',
+        });
+
+        const defender = Pokemon('Ting-Lu', {
+          level: 50,
+          evs: {hp: 4},
+          item: 'Sitrus Berry',
+        });
+
+        const move = Move('Surging Strikes', {isCrit: true});
+
+        const result = calculate(attacker, defender, move);
+
+        expect(result.afterTurn().residualHpInTurn(1)).toBe(57);
+      });
+
+      test('should show 0 for guaranteed OHKO regardless of berry', () => {
+        const attacker = Pokemon('Urshifu-Rapid-Strike', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {atk: 252},
+          item: 'Choice Band',
+        });
+
+        const defender = Pokemon('Incineroar', {
+          level: 50,
+          evs: {hp: 4},
+          item: 'Sitrus Berry',
+        });
+
+        const move = Move('Close Combat');
+
+        const result = calculate(attacker, defender, move);
+
+        expect(result.afterTurn().residualHpInTurn(1)).toBe(0);
+      });
+
+      test('should show only EOT when berry triggers on Turn 2', () => {
+        const attacker = Pokemon('Rillaboom', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {atk: 116},
+        });
+
+        const defender = Pokemon('Incineroar', {
+          level: 50,
+          nature: 'Impish',
+          evs: {hp: 252, def: 252},
+          item: 'Sitrus Berry',
+        });
+
+        const move = Move('High Horsepower');
+
+        const result = calculate(attacker, defender, move);
+
+        expect(result.afterTurn().residualHpInTurn(1)).toBe(0);
+        expect(result.afterTurn().residualHpInTurn(2)).toBe(50);
+      });
+
+      test('should show berry recovery even when it is not triggered in ko chance', () => {
+        const attacker = Pokemon('Rillaboom', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {atk: 180},
+        });
+
+        const defender = Pokemon('Incineroar', {
+          level: 50,
+          nature: 'Impish',
+          evs: {hp: 252, def: 252},
+          item: 'Sitrus Berry',
+        });
+
+        const move = Move('High Horsepower');
+
+        const result = calculate(attacker, defender, move);
+
+        expect(result.afterTurn().residualHpInTurn(1)).toBe(50);
+        expect(result.afterTurn().residualHpInTurn(2)).toBe(0);
+      });
+
+      test('should sum trapping damage after 2 turns', () => {
+        const attacker = Pokemon('Heatran', {
+          level: 50,
+          nature: 'Adamant',
+          boosts: {spa: -2},
+        });
+
+        const defender = Pokemon('Landorus', {
+          level: 50,
+        });
+
+        const move = Move('Magma Storm');
+
+        const result = calculate(attacker, defender, move);
+
+        expect(result.afterTurn().residualHpInTurn(1)).toBe(-20);
+        expect(result.afterTurn().residualHpInTurn(2)).toBe(-20);
+      });
+
+      test('should sum trapping damage and Leftovers recovery after 2 turns', () => {
+        const attacker = Pokemon('Heatran', {
+          level: 50,
+          nature: 'Adamant',
+          boosts: {spa: -2},
+        });
+
+        const defender = Pokemon('Landorus', {
+          level: 50,
+          item: 'Leftovers',
+        });
+
+        const move = Move('Magma Storm');
+
+        const result = calculate(attacker, defender, move);
+
+        expect(result.afterTurn().residualHpInTurn(1)).toBe(-10);
+        expect(result.afterTurn().residualHpInTurn(2)).toBe(-10);
+      });
+
+      test('should sum Leftovers and Grass terrain recovery after 4 turns', () => {
+        const attacker = Pokemon('Urshifu-Rapid-Strike', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {atk: 20},
+        });
+
+        const defender = Pokemon('Rillaboom', {
+          level: 50,
+          nature: 'Bold',
+          item: 'Leftovers',
+          evs: {hp: 28, def: 164},
+        });
+
+        const move = Move('U-turn');
+        const field = Field({terrain: 'Grassy'});
+
+        const result = calculate(attacker, defender, move, field);
+
+        expect(result.afterTurn().residualHpInTurn(1)).toBe(22);
+        expect(result.afterTurn().residualHpInTurn(2)).toBe(22);
+        expect(result.afterTurn().residualHpInTurn(3)).toBe(22);
+        expect(result.afterTurn().residualHpInTurn(4)).toBe(0);
+      });
+
+      test('should not apply residual recovery on the death turn', () => {
+        const attacker = Pokemon('Blissey', {
+          level: 80,
+        });
+
+        const defender = Pokemon('Rillaboom', {
+          level: 50,
+          evs: {hp: 4},
+          item: 'Leftovers',
+        });
+
+        const move = Move('Seismic Toss');
+        const field = Field({terrain: 'Grassy'});
+
+        const result = calculate(attacker, defender, move, field);
+
+        expect(result.afterTurn().remainingHpUntilTurn(1)).toBe(118);
+        expect(result.afterTurn().remainingHpUntilTurn(2)).toBe(60);
+        expect(result.afterTurn().remainingHpUntilTurn(3)).toBe(0);
+        expect(result.afterTurn().residualHpInTurn(3)).toBe(0);
+        expect(result.maxDamageWithRemainingUntilTurn(3)).toBe(176);
+      });
+
+      test('should apply two residual damage in the same turn', () => {
+        const attacker = Pokemon('Heatran', {
+          level: 50,
+          nature: 'Modest',
+          evs: {spa: 60},
+          item: 'Choice Specs',
+        });
+
+        const defender = Pokemon('Gholdengo', {
+          level: 50,
+          item: 'Choice Specs',
+          nature: 'Bold',
+          status: 'brn',
+          teraType: 'Fairy',
+        });
+
+        const move = Move('Magma Storm');
+        const field = Field();
+
+        const result = calculate(attacker, defender, move, field);
+
+        expect(result.afterTurn().remainingHpUntilTurn(1)).toBe(0);
+        expect(result.afterTurn().totalResidualHpUntilKO()).toBe(-30);
+      });
+
+      test('should verify EOT precedence (Leftovers vs Burn) 2HKO', () => {
+        const attacker = Pokemon('Landorus-Therian', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {atk: 164},
+        });
+
+        const defender = Pokemon('Gholdengo', {
+          level: 50,
+          item: 'Leftovers',
+          nature: 'Bold',
+          status: 'brn',
+          teraType: 'Fairy',
+        });
+
+        const move = Move('Stomping Tantrum');
+        const field = Field();
+        const result = calculate(attacker, defender, move, field);
+
+        expect(result.fullDesc()).toContain('1.6% chance to 2HKO after Leftovers recovery and burn damage');
+        expect(result.afterTurn().remainingHpUntilTurn(1)).toBe(80);
+        expect(result.afterTurn().remainingHpUntilTurn(2)).toBe(0);
+      });
+
+      test('should verify EOT precedence (Leftovers vs Burn) 3HKO', () => {
+        const attacker = Pokemon('Landorus-Therian', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {atk: 164},
+        });
+
+        const defender = Pokemon('Gholdengo', {
+          level: 50,
+          item: 'Leftovers',
+          nature: 'Bold',
+          evs: {hp: 4, def: 12},
+          status: 'brn',
+          teraType: 'Fairy',
+        });
+
+        const move = Move('Stomping Tantrum');
+        const field = Field();
+        const result = calculate(attacker, defender, move, field);
+
+        expect(result.fullDesc()).toContain('guaranteed 3HKO after Leftovers recovery and burn damage');
+        expect(result.afterTurn().remainingHpUntilTurn(1)).toBe(82);
+        expect(result.afterTurn().remainingHpUntilTurn(2)).toBe(1);
+        expect(result.afterTurn().remainingHpUntilTurn(3)).toBe(0);
+      });
+
+      test('should verify EOT precedence (Leftovers vs Poison)', () => {
+        const attacker = Pokemon('Landorus-Therian', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {atk: 164},
+        });
+
+        const defender = Pokemon('Gholdengo', {
+          level: 50,
+          item: 'Leftovers',
+          nature: 'Bold',
+          evs: {hp: 4, def: 12},
+          status: 'psn',
+          teraType: 'Fairy',
+        });
+
+        const move = Move('Stomping Tantrum');
+        const field = Field({terrain: 'Grassy'});
+        const result = calculate(attacker, defender, move, field);
+
+        expect(result.fullDesc()).toContain('guaranteed 3HKO after Leftovers, Grassy Terrain recovery, and poison damage');
+        expect(result.afterTurn().remainingHpUntilTurn(1)).toBe(82);
+        expect(result.afterTurn().remainingHpUntilTurn(2)).toBe(1);
+        expect(result.afterTurn().remainingHpUntilTurn(3)).toBe(0);
+      });
+
+      test('should verify EOT precedence (Grass Terrain vs Burn)', () => {
+        const attacker = Pokemon('Landorus-Therian', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {atk: 164},
+        });
+
+        const defender = Pokemon('Gholdengo', {
+          level: 50,
+          nature: 'Bold',
+          evs: {hp: 4, def: 12},
+          status: 'brn',
+          teraType: 'Fairy',
+        });
+
+        const move = Move('Stomping Tantrum');
+        const field = Field({terrain: 'Grassy'});
+        const result = calculate(attacker, defender, move, field);
+
+        expect(result.fullDesc()).toContain('guaranteed 3HKO after Grassy Terrain recovery and burn damage');
+        expect(result.afterTurn().remainingHpUntilTurn(1)).toBe(82);
+        expect(result.afterTurn().remainingHpUntilTurn(2)).toBe(1);
+        expect(result.afterTurn().remainingHpUntilTurn(3)).toBe(0);
+      });
     });
   });
 });

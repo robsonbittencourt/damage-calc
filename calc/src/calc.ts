@@ -30,11 +30,18 @@ export function calculate(
   move: Move,
   field?: Field,
 ) {
-  return MECHANICS[gen.num](
+  attacker = attacker.clone();
+  defender = defender.clone();
+  move = move.clone();
+  field = field ? field.clone() : new Field();
+
+  const result = MECHANICS[gen.num](
     gen,
-    attacker.clone(),
-    defender.clone(),
-    move.clone(),
-    field ? field.clone() : new Field()
+    attacker,
+    defender,
+    move,
+    field,
   ) as Result;
+
+  return result;
 }
