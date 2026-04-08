@@ -1,11 +1,11 @@
-import type * as I from '../data/interface';
-import type * as D from '@pkmn/dex';
+import type * as D from "@pkmn/dex";
+import type * as I from "../data/interface";
 
 export function toID(s: string) {
-  return ('' + s).toLowerCase().replace(/[^a-z0-9]+/g, '') as I.ID;
+  return ("" + s).toLowerCase().replace(/[^a-z0-9]+/g, "") as I.ID;
 }
 
-const GENERATIONS = Object.create(null) as {[num: number]: Generation};
+const GENERATIONS = Object.create(null) as { [num: number]: Generation };
 
 export class Generations implements I.Generations {
   private readonly dex: D.ModdedDex;
@@ -54,8 +54,10 @@ class Abilities implements I.Abilities {
 
   get(name: string) {
     const ability = this.dex.abilities.get(name);
-    if (ability.isNonstandard === 'CAP' && this.dex.gen < 4) return undefined;
-    return exists(ability, this.dex.gen, this.dex) ? new Ability(ability) : undefined;
+    if (ability.isNonstandard === "CAP" && this.dex.gen < 4) return undefined;
+    return exists(ability, this.dex.gen, this.dex)
+      ? new Ability(ability)
+      : undefined;
   }
 
   *[Symbol.iterator]() {
@@ -67,12 +69,12 @@ class Abilities implements I.Abilities {
 }
 
 class Ability implements I.Ability {
-  readonly kind: 'Ability';
+  readonly kind: "Ability";
   readonly id: I.ID;
   readonly name: I.AbilityName;
 
   constructor(ability: D.Ability) {
-    this.kind = 'Ability';
+    this.kind = "Ability";
     this.id = ability.id as I.ID;
     this.name = ability.name as I.AbilityName;
   }
@@ -90,10 +92,12 @@ class Items implements I.Items {
     let item = this.dex.items.get(name);
     // Enigma Berry is Unobtainable in Gen 3, but the damage calc supports Unobtainable data and
     // needs the naturalGift data which is only defined in Gen 4.
-    if (this.dex.gen === 3 && item.id === 'enigmaberry') {
-      item = this.dex.forGen(4).items.get('enigmaberry');
+    if (this.dex.gen === 3 && item.id === "enigmaberry") {
+      item = this.dex.forGen(4).items.get("enigmaberry");
     }
-    return exists(item, this.dex.gen, this.dex) ? new Item(item, this.dex.gen) : undefined;
+    return exists(item, this.dex.gen, this.dex)
+      ? new Item(item, this.dex.gen)
+      : undefined;
   }
 
   *[Symbol.iterator]() {
@@ -105,15 +109,17 @@ class Items implements I.Items {
 }
 
 class Item implements I.Item {
-  readonly kind: 'Item';
+  readonly kind: "Item";
   readonly id: I.ID;
   readonly name: I.ItemName;
-  readonly megaStone?: Readonly<{[megaEvolves: I.SpeciesName]: I.SpeciesName}>;
+  readonly megaStone?: Readonly<{
+    [megaEvolves: I.SpeciesName]: I.SpeciesName;
+  }>;
   readonly isBerry?: boolean;
-  readonly naturalGift?: Readonly<{basePower: number; type: I.TypeName}>;
+  readonly naturalGift?: Readonly<{ basePower: number; type: I.TypeName }>;
 
   constructor(item: D.Item, gen: I.GenerationNum) {
-    this.kind = 'Item';
+    this.kind = "Item";
     this.id = item.id as I.ID;
     this.name = item.name as I.ItemName;
     this.megaStone = item.megaStone as unknown as Readonly<{
@@ -136,7 +142,9 @@ class Moves implements I.Moves {
 
   get(name: string) {
     const move = this.dex.moves.get(name);
-    return exists(move, this.dex.gen, this.dex) ? new Move(move, this.dex) : undefined;
+    return exists(move, this.dex.gen, this.dex)
+      ? new Move(move, this.dex)
+      : undefined;
   }
 
   *[Symbol.iterator]() {
@@ -149,7 +157,7 @@ class Moves implements I.Moves {
 }
 
 class Move implements I.Move {
-  readonly kind: 'Move';
+  readonly kind: "Move";
   readonly id: I.ID;
   readonly name: I.MoveName;
   readonly basePower: number;
@@ -169,8 +177,8 @@ class Move implements I.Move {
   readonly ignoreDefensive?: boolean;
   readonly overrideOffensiveStat?: I.StatIDExceptHP;
   readonly overrideDefensiveStat?: I.StatIDExceptHP;
-  readonly overrideOffensivePokemon?: 'target' | 'source';
-  readonly overrideDefensivePokemon?: 'target' | 'source';
+  readonly overrideOffensivePokemon?: "target" | "source";
+  readonly overrideDefensivePokemon?: "target" | "source";
   readonly breaksProtect?: boolean;
   readonly isZ?: boolean;
   readonly zMove?: {
@@ -184,8 +192,8 @@ class Move implements I.Move {
   readonly multiaccuracy?: boolean;
 
   constructor(move: D.Move, dex: D.ModdedDex) {
-    this.kind = 'Move';
-    this.id = move.id === 'hiddenpower' ? toID(move.name) : move.id as I.ID;
+    this.kind = "Move";
+    this.id = move.id === "hiddenpower" ? toID(move.name) : (move.id as I.ID);
     this.name = move.name as I.MoveName;
     this.basePower = move.basePower;
     this.type = move.type;
@@ -194,7 +202,7 @@ class Move implements I.Move {
     this.overrideOffensivePokemon = move.overrideOffensivePokemon;
     this.overrideDefensivePokemon = move.overrideDefensivePokemon;
 
-    if (move.category === 'Status' || dex.gen >= 4) {
+    if (move.category === "Status" || dex.gen >= 4) {
       this.category = move.category;
     }
 
@@ -203,8 +211,12 @@ class Move implements I.Move {
     if (move.mindBlownRecoil) this.mindBlownRecoil = move.mindBlownRecoil;
     if (move.struggleRecoil) this.struggleRecoil = move.struggleRecoil;
 
-    const stat = move.category === 'Special' ? 'spa' : 'atk';
-    if (move.self?.boosts && move.self.boosts[stat] && move.self.boosts[stat]! < 0) {
+    const stat = move.category === "Special" ? "spa" : "atk";
+    if (
+      move.self?.boosts &&
+      move.self.boosts[stat] &&
+      move.self.boosts[stat]! < 0
+    ) {
       this.self = move.self;
     }
 
@@ -222,7 +234,7 @@ class Move implements I.Move {
       if (move.flags.contact) this.flags.contact = move.flags.contact;
       if (move.flags.sound) this.flags.sound = move.flags.sound;
 
-      if (['allAdjacent', 'allAdjacentFoes'].includes(move.target)) {
+      if (["allAdjacent", "allAdjacentFoes"].includes(move.target)) {
         this.target = move.target;
       }
     }
@@ -233,7 +245,7 @@ class Move implements I.Move {
     if (dex.gen >= 5) {
       if (move.ignoreDefensive) this.ignoreDefensive = move.ignoreDefensive;
 
-      if ('secondaries' in move && move.secondaries?.length) {
+      if ("secondaries" in move && move.secondaries?.length) {
         this.secondaries = true;
       }
     }
@@ -243,11 +255,12 @@ class Move implements I.Move {
     }
     if (dex.gen >= 7) {
       if (move.isZ) this.isZ = true;
-      if (move.zMove?.basePower) this.zMove = {basePower: move.zMove.basePower};
+      if (move.zMove?.basePower)
+        this.zMove = { basePower: move.zMove.basePower };
     }
     if (dex.gen >= 8) {
       if (move.isMax) this.isMax = true;
-      if (move.maxMove) this.maxMove = {basePower: move.maxMove.basePower};
+      if (move.maxMove) this.maxMove = { basePower: move.maxMove.basePower };
     }
     if (dex.gen >= 9) {
       if (move.flags.wind) this.flags.wind = move.flags.wind;
@@ -265,15 +278,18 @@ class Species implements I.Species {
 
   get(name: string) {
     const species = this.dex.species.get(name);
-    if (this.dex.gen >= 6 && species.id === 'aegislashboth') return AegislashBoth(this.dex);
-    return exists(species, this.dex.gen, this.dex) ? new Specie(species, this.dex) : undefined;
+    if (this.dex.gen >= 6 && species.id === "aegislashboth")
+      return AegislashBoth(this.dex);
+    return exists(species, this.dex.gen, this.dex)
+      ? new Specie(species, this.dex)
+      : undefined;
   }
 
   *[Symbol.iterator]() {
     for (const id in this.dex.data.Species) {
       const s = this.get(id);
       if (s) {
-        if (id === 'aegislash') yield AegislashBoth(this.dex);
+        if (id === "aegislash") yield AegislashBoth(this.dex);
         yield s;
       }
     }
@@ -282,86 +298,107 @@ class Species implements I.Species {
 
 // Custom Move placeholder
 function NoMove(dex: D.ModdedDex) {
-  return new Move({
-    id: 'nomove' as I.ID,
-    name: '(No Move)' as I.MoveName,
-    basePower: 0,
-    type: 'Normal',
-    category: 'Status',
-    target: 'any',
-    flags: {},
-    gen: 1,
-    priority: 0,
-  } as D.Move, dex);
+  return new Move(
+    {
+      id: "nomove" as I.ID,
+      name: "(No Move)" as I.MoveName,
+      basePower: 0,
+      type: "Normal",
+      category: "Status",
+      target: "any",
+      flags: {},
+      gen: 1,
+      priority: 0,
+    } as D.Move,
+    dex,
+  );
 }
 
 class Specie implements I.Specie {
-  readonly kind: 'Species';
+  readonly kind: "Species";
   readonly id: I.ID;
   readonly name: I.SpeciesName;
 
   readonly types: [I.TypeName] | [I.TypeName, I.TypeName];
   readonly baseStats: Readonly<I.StatsTable>;
   readonly weightkg: number;
-  readonly nfe?: boolean;
   readonly gender?: I.GenderName;
+  readonly nfe?: boolean;
+  readonly abilities?: { 0: I.AbilityName };
   readonly otherFormes?: I.SpeciesName[];
   readonly baseSpecies?: I.SpeciesName;
-  readonly abilities?: {0: I.AbilityName};
 
   constructor(species: D.Species, dex: D.ModdedDex) {
-    this.kind = 'Species';
-    this.id = (species.id === 'aegislash' ? 'aegislashshield' : species.id) as I.ID;
-    this.name = (species.name === 'Aegislash' ? 'Aegislash-Shield' : species.name) as I.SpeciesName;
+    this.kind = "Species";
+    this.id = (
+      species.id === "aegislash" ? "aegislashshield" : species.id
+    ) as I.ID;
+    this.name = (
+      species.name === "Aegislash" ? "Aegislash-Shield" : species.name
+    ) as I.SpeciesName;
     this.types = species.types;
     this.baseStats = species.baseStats;
     this.weightkg = species.weightkg;
 
-    const nfe = !!species.evos?.some((s: string) => exists(dex.species.get(s), dex.gen, dex));
+    if (species.gender && dex.gen > 1) this.gender = species.gender;
+    const nfe = !!species.evos?.some((s: string) =>
+      exists(dex.species.get(s), dex.gen),
+    );
     if (nfe) this.nfe = nfe;
-    if (species.gender === 'N' && dex.gen > 1) this.gender = species.gender;
+    if (dex.gen > 2)
+      this.abilities = { 0: species.abilities[0] as I.AbilityName };
 
     const formes = species.otherFormes?.filter((s: string) =>
-      exists(dex.species.get(s), dex.gen, dex));
-    if (species.id.startsWith('aegislash')) {
-      if (species.id === 'aegislashblade') {
-        this.otherFormes = ['Aegislash-Shield', 'Aegislash-Both'] as I.SpeciesName[];
+      exists(dex.species.get(s), dex.gen, dex),
+    );
+    if (species.id.startsWith("aegislash")) {
+      if (species.id === "aegislashblade") {
+        this.otherFormes = [
+          "Aegislash-Shield",
+          "Aegislash-Both",
+        ] as I.SpeciesName[];
       } else {
-        this.baseSpecies = 'Aegislash-Blade' as I.SpeciesName;
+        this.baseSpecies = "Aegislash-Blade" as I.SpeciesName;
       }
-    } else if (species.id === 'toxtricity') {
+    } else if (species.id === "toxtricity") {
       this.otherFormes = [
-        'Toxtricity-Gmax', 'Toxtricity-Low-Key', 'Toxtricity-Low-Key-Gmax',
+        "Toxtricity-Gmax",
+        "Toxtricity-Low-Key",
+        "Toxtricity-Low-Key-Gmax",
       ] as I.SpeciesName[];
-    } else if (species.id === 'toxtricitylowkey') {
-      this.baseSpecies = 'Toxtricity' as I.SpeciesName;
-    } else if (species.id === 'urshifu') {
+    } else if (species.id === "toxtricitylowkey") {
+      this.baseSpecies = "Toxtricity" as I.SpeciesName;
+    } else if (species.id === "urshifu") {
       this.otherFormes = [
-        'Urshifu-Gmax', 'Urshifu-Rapid-Strike', 'Urshifu-Rapid-Strike-Gmax',
+        "Urshifu-Gmax",
+        "Urshifu-Rapid-Strike",
+        "Urshifu-Rapid-Strike-Gmax",
       ] as I.SpeciesName[];
-    } else if (species.id === 'eternatus') {
-      this.otherFormes = ['Eternatus-Eternamax'] as I.SpeciesName[];
+    } else if (species.id === "eternatus") {
+      this.otherFormes = ["Eternatus-Eternamax"] as I.SpeciesName[];
     } else if (formes?.length) {
       this.otherFormes = [...formes].sort() as I.SpeciesName[];
     } else if (species.baseSpecies !== this.name) {
       this.baseSpecies = species.baseSpecies as I.SpeciesName;
     }
     // TODO: clean this up with proper Gigantamax support
-    if (dex.gen === 8 && species.canGigantamax &&
-        !(species.id.startsWith('toxtricity') || species.id.startsWith('urshifu'))) {
+    if (
+      dex.gen === 8 &&
+      species.canGigantamax &&
+      !(species.id.startsWith("toxtricity") || species.id.startsWith("urshifu"))
+    ) {
       const formes = this.otherFormes || [];
       const gmax = dex.species.get(`${species.name}-Gmax`);
-      if (exists(gmax, dex.gen, dex)) this.otherFormes = [...formes, gmax.name].sort();
+      if (exists(gmax, dex.gen, dex))
+        this.otherFormes = [...formes, gmax.name].sort();
     }
-
-    if (dex.gen > 2) this.abilities = {0: species.abilities[0] as I.AbilityName};
   }
 }
 
 // Custom Aegislash forme
 function AegislashBoth(dex: D.ModdedDex) {
-  const shield = dex.species.get('aegislash')!;
-  const blade = dex.species.get('aegislashblade')!;
+  const shield = dex.species.get("aegislash")!;
+  const blade = dex.species.get("aegislashblade")!;
   const baseStats = {
     hp: shield.baseStats.hp,
     atk: blade.baseStats.atk,
@@ -370,44 +407,56 @@ function AegislashBoth(dex: D.ModdedDex) {
     spd: shield.baseStats.spd,
     spe: shield.baseStats.spe,
   };
-  return new Specie({
-    ...shield,
-    baseStats,
-    id: 'aegislashboth' as I.ID,
-    name: 'Aegislash-Both' as I.SpeciesName,
-  } as D.Species, dex);
+  return new Specie(
+    {
+      ...shield,
+      baseStats,
+      id: "aegislashboth" as I.ID,
+      name: "Aegislash-Both" as I.SpeciesName,
+    } as D.Species,
+    dex,
+  );
 }
 
 const DAMAGE_TAKEN = [1, 2, 0.5, 0] as I.TypeEffectiveness[];
 
 export class Types implements I.Types {
   private readonly dex: D.ModdedDex;
-  private readonly byID: {[id: string]: I.Type};
+  private readonly byID: { [id: string]: I.Type };
 
   constructor(dex: D.ModdedDex) {
     this.dex = dex;
 
     const unknown = {
-      kind: 'Type',
-      id: '' as I.ID,
-      name: '???',
+      kind: "Type",
+      id: "" as I.ID,
+      name: "???",
       effectiveness: {},
     } as I.Type;
 
     this.byID = {};
     for (const id in this.dex.data.Types) {
       if (!exists(this.dex.types.get(id), this.dex.gen, this.dex)) continue;
-      const name = id[0].toUpperCase() + id.slice(1) as Exclude<I.TypeName, '???'>;
+      const name = (id[0].toUpperCase() + id.slice(1)) as Exclude<
+        I.TypeName,
+        "???"
+      >;
 
-      const effectiveness = {'???': 1} as {[type in I.TypeName]: I.TypeEffectiveness};
+      const effectiveness = { "???": 1 } as {
+        [type in I.TypeName]: I.TypeEffectiveness;
+      };
       for (const t2ID in this.dex.data.Types) {
         if (!exists(this.dex.types.get(t2ID), this.dex.gen, this.dex)) continue;
-        const t = t2ID[0].toUpperCase() + t2ID.slice(1) as Exclude<I.TypeName, '???'>;
-        effectiveness[t] = DAMAGE_TAKEN[this.dex.data.Types[t2ID].damageTaken[name]!];
+        const t = (t2ID[0].toUpperCase() + t2ID.slice(1)) as Exclude<
+          I.TypeName,
+          "???"
+        >;
+        effectiveness[t] =
+          DAMAGE_TAKEN[this.dex.data.Types[t2ID].damageTaken[name]!];
       }
       (unknown.effectiveness as any)[name] = 1;
 
-      this.byID[id] = {kind: 'Type', id: id as I.ID, name, effectiveness};
+      this.byID[id] = { kind: "Type", id: id as I.ID, name, effectiveness };
     }
     this.byID[unknown.id] = unknown;
   }
@@ -445,83 +494,89 @@ export class Natures implements I.Natures {
 }
 
 class Nature implements I.Nature {
-  readonly kind: 'Nature';
+  readonly kind: "Nature";
   readonly id: I.ID;
   readonly name: I.NatureName;
   readonly plus: I.StatID;
   readonly minus: I.StatID;
 
   constructor(nature: D.Nature) {
-    this.kind = 'Nature';
+    this.kind = "Nature";
     this.id = nature.id as I.ID;
     this.name = nature.name;
 
     switch (nature.id) {
-    case 'hardy':
-      this.plus = 'atk';
-      this.minus = 'atk';
-      break;
-    case 'docile':
-      this.plus = 'def';
-      this.minus = 'def';
-      break;
-    case 'bashful':
-      this.plus = 'spa';
-      this.minus = 'spa';
-      break;
-    case 'quirky':
-      this.plus = 'spd';
-      this.minus = 'spd';
-      break;
-    case 'serious':
-      this.plus = 'spe';
-      this.minus = 'spe';
-      break;
-    default:
-      this.plus = nature.plus!;
-      this.minus = nature.minus!;
+      case "hardy":
+        this.plus = "atk";
+        this.minus = "atk";
+        break;
+      case "docile":
+        this.plus = "def";
+        this.minus = "def";
+        break;
+      case "bashful":
+        this.plus = "spa";
+        this.minus = "spa";
+        break;
+      case "quirky":
+        this.plus = "spd";
+        this.minus = "spd";
+        break;
+      case "serious":
+        this.plus = "spe";
+        this.minus = "spe";
+        break;
+      default:
+        this.plus = nature.plus!;
+        this.minus = nature.minus!;
     }
   }
 }
 
 const NATDEX_BANNED = [
-  'Pikachu-Cosplay',
-  'Pikachu-Rock-Star',
-  'Pikachu-Belle',
-  'Pikachu-Pop-Star',
-  'Pikachu-PhD',
-  'Pikachu-Libre',
-  'Pichu-Spiky-eared',
-  'Floette-Eternal',
+  "Pikachu-Cosplay",
+  "Pikachu-Rock-Star",
+  "Pikachu-Belle",
+  "Pikachu-Pop-Star",
+  "Pikachu-PhD",
+  "Pikachu-Libre",
+  "Pichu-Spiky-eared",
+  "Floette-Eternal",
 ];
 
 function exists(
   val: D.Ability | D.Item | D.Move | D.Species | D.Type,
   gen: I.GenerationNum,
-  dex?: D.ModdedDex
+  dex?: D.ModdedDex,
 ) {
-  if (!val.exists || val.id === 'noability') return false;
-  if (val.kind === 'Species' && dex) {
+  if (!val.exists || val.id === "noability") return false;
+  if (val.kind === "Species" && dex) {
     const base = val.baseSpecies ? dex.species.get(val.baseSpecies) : undefined;
     if (base?.cosmeticFormes?.includes(val.name)) return false;
   }
-  if (gen === 7 && val.isNonstandard === 'LGPE') return true;
+  if (gen === 7 && val.isNonstandard === "LGPE") return true;
   if (gen >= 8) {
     if (gen === 8) {
-      if (('isMax' in val && val.isMax) || val.isNonstandard === 'Gigantamax') return true;
-      if (['eternatuseternamax', 'zarude', 'zarudedada'].includes(val.id)) return true;
-      if (val.isNonstandard === 'Future') return false;
+      if (("isMax" in val && val.isMax) || val.isNonstandard === "Gigantamax")
+        return true;
+      if (["eternatuseternamax", "zarude", "zarudedada"].includes(val.id))
+        return true;
+      if (val.isNonstandard === "Future") return false;
     }
-    if (val.isNonstandard === 'Past' && !NATDEX_BANNED.includes(val.name)) return true;
-    if (gen > 8 && 'isZ' in val && val.isZ) return false;
-    if (gen > 8 && val.isNonstandard === 'Unobtainable') return true;
-    if (gen > 8 && val.isNonstandard === 'Future') return true;
-    if (gen > 8 && ['ramnarokradiant'].includes(val.id)) return true;
+    if (val.isNonstandard === "Past" && !NATDEX_BANNED.includes(val.name))
+      return true;
+    if (gen > 8 && "isZ" in val && val.isZ) return false;
+    if (gen > 8 && val.isNonstandard === "Unobtainable") return true;
+    if (gen > 8 && val.isNonstandard === "Future") return true;
+    if (gen > 8 && ["ramnarokradiant"].includes(val.id)) return true;
   }
-  if (gen >= 6 && ['floetteeternal'].includes(val.id)) return true;
+  if (gen >= 6 && ["floetteeternal"].includes(val.id)) return true;
   // TODO: clean this up with proper Gigantamax support
-  if (val.isNonstandard && !['CAP', 'Unobtainable', 'Gigantamax'].includes(val.isNonstandard)) {
+  if (
+    val.isNonstandard &&
+    !["CAP", "Unobtainable", "Gigantamax"].includes(val.isNonstandard)
+  ) {
     return false;
   }
-  return !('tier' in val && ['Illegal', 'Unreleased'].includes(val.tier));
+  return !("tier" in val && ["Illegal", "Unreleased"].includes(val.tier));
 }
