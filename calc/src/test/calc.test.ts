@@ -2227,5 +2227,98 @@ describe('calc', () => {
         expect(result.afterTurn().remainingHpUntilTurn(3)).toBe(0);
       });
     });
+
+    describe('Champions abilities', () => {
+      inGen(9, ({calculate, Pokemon, Move, Field}) => {
+        describe('Dragonize', () => {
+          test('converts Normal-type move to Dragon-type and applies 1.2x boost', () => {
+            const attacker = Pokemon('Feraligatr', {ability: 'Dragonize', evs: {atk: 252}});
+            const defender = Pokemon('Blissey');
+            const result = calculate(attacker, defender, Move('Return'));
+            expect(result.desc()).toBe(
+              '252 Atk Dragonize Feraligatr Return vs. 0 HP / 0 Def Blissey: 481-567 (73.8 - 87%) -- guaranteed 2HKO'
+            );
+          });
+
+          test('does not convert non-Normal-type moves', () => {
+            const attacker = Pokemon('Feraligatr', {ability: 'Dragonize', evs: {atk: 252}});
+            const defender = Pokemon('Blissey');
+            const result = calculate(attacker, defender, Move('Waterfall'));
+            expect(result.desc()).not.toContain('Dragonize');
+          });
+        });
+
+        describe('Mega Sol', () => {
+          test('Weather Ball becomes Fire-type with 100 BP without actual weather', () => {
+            const attacker = Pokemon('Meganium', {ability: 'Mega Sol', evs: {spa: 252}});
+            const defender = Pokemon('Blissey');
+            const result = calculate(attacker, defender, Move('Weather Ball'));
+            expect(result.desc()).toContain('Weather Ball (100 BP Fire)');
+          });
+
+          test('Fire-type moves receive 1.5x boost without actual weather', () => {
+            const attacker = Pokemon('Meganium', {ability: 'Mega Sol', evs: {spa: 252}});
+            const defender = Pokemon('Blissey');
+            const withMegaSol = calculate(attacker, defender, Move('Flamethrower')).range();
+            const withoutAbility = calculate(
+              Pokemon('Meganium', {evs: {spa: 252}}),
+              defender,
+              Move('Flamethrower')
+            ).range();
+            expect(withMegaSol[0]).toBeGreaterThan(withoutAbility[0]);
+          });
+
+          test('Water-type moves receive 0.5x reduction without actual weather', () => {
+            const attacker = Pokemon('Meganium', {ability: 'Mega Sol', evs: {spa: 252}});
+            const defender = Pokemon('Blissey');
+            const withMegaSol = calculate(attacker, defender, Move('Surf')).range();
+            const withoutAbility = calculate(
+              Pokemon('Meganium', {evs: {spa: 252}}),
+              defender,
+              Move('Surf')
+            ).range();
+            expect(withMegaSol[0]).toBeLessThan(withoutAbility[0]);
+          });
+
+          test('Rock-type defenders do not get Sandstorm SpD boost', () => {
+            const attacker = Pokemon('Meganium', {ability: 'Mega Sol', evs: {spa: 252}});
+            const defender = Pokemon('Tyranitar', {evs: {spd: 252}});
+            const withMegaSol = calculate(attacker, defender, Move('Energy Ball'), Field({weather: 'Sand'})).range();
+            const withoutAbility = calculate(
+              Pokemon('Meganium', {evs: {spa: 252}}),
+              defender,
+              Move('Energy Ball'),
+              Field({weather: 'Sand'})
+            ).range();
+            expect(withMegaSol[0]).toBeGreaterThan(withoutAbility[0]);
+          });
+
+          test('Ice-type defenders do not get Snow Def boost', () => {
+            const attacker = Pokemon('Meganium', {ability: 'Mega Sol', evs: {atk: 252}});
+            const defender = Pokemon('Glaceon', {evs: {def: 252}});
+            const withMegaSol = calculate(attacker, defender, Move('Leaf Blade'), Field({weather: 'Snow'})).range();
+            const withoutAbility = calculate(
+              Pokemon('Meganium', {evs: {atk: 252}}),
+              defender,
+              Move('Leaf Blade'),
+              Field({weather: 'Snow'})
+            ).range();
+            expect(withMegaSol[0]).toBeGreaterThan(withoutAbility[0]);
+          });
+
+          test('Hydro Steam receives 1.5x boost instead of reduction without actual weather', () => {
+            const attacker = Pokemon('Meganium', {ability: 'Mega Sol', evs: {spa: 252}});
+            const defender = Pokemon('Blissey');
+            const withMegaSol = calculate(attacker, defender, Move('Hydro Steam')).range();
+            const withoutAbility = calculate(
+              Pokemon('Meganium', {evs: {spa: 252}}),
+              defender,
+              Move('Hydro Steam')
+            ).range();
+            expect(withMegaSol[0]).toBeGreaterThan(withoutAbility[0]);
+          });
+        });
+      });
+    });
   });
 });
