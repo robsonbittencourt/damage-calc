@@ -1040,7 +1040,8 @@ export function getEndOfTurn(
   }
   if (field.defenderSide.isSaltCured && !defender.hasAbility('Magic Guard')) {
     const isWaterOrSteel = defender.hasType('Water', 'Steel');
-    damage -= Math.floor(defender.maxHP() / (isWaterOrSteel ? 4 : 8));
+    const saltCureDivisor = gen.num === 10 ? (isWaterOrSteel ? 8 : 16) : (isWaterOrSteel ? 4 : 8);
+    damage -= Math.floor(defender.maxHP() / saltCureDivisor);
     texts.push('Salt Cure');
   }
   if (!defender.hasType('Fire') && !defender.hasAbility('Magic Guard') &&

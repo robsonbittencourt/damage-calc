@@ -21,6 +21,7 @@ const MECHANICS = [
   calculateSMSSSV,
   calculateSMSSSV,
   calculateSMSSSV,
+  calculateSMSSSV,
 ];
 
 export function calculate(

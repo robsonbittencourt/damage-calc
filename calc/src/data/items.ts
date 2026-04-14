@@ -637,7 +637,7 @@ export class Items implements I.Items {
   private readonly gen: I.GenerationNum;
 
   constructor(gen: I.GenerationNum) {
-    this.gen = gen;
+    this.gen = gen === 10 ? 9 : gen;
   }
 
   get(id: I.ID) {

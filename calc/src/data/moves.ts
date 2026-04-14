@@ -4934,7 +4934,27 @@ const ZA_PATCH: {[name: string]: DeepPartial<MoveData>} = {
 
 const SV: {[name: string]: MoveData} = extend(true, {}, SS, SV_PATCH, ZA_PATCH);
 
-export const MOVES = [{}, RBY, GSC, ADV, DPP, BW, XY, SM, SS, SV];
+const CHAMPIONS_PATCH: {[name: string]: DeepPartial<MoveData>} = {
+  'Shadow Claw': {isSlicing: true},
+  'Dragon Claw': {isSlicing: true},
+  'Beak Blast': {bp: 120},
+  'Mountain Gale': {bp: 120},
+  'First Impression': {bp: 100},
+  'Night Daze': {bp: 90},
+  'Apple Acid': {bp: 90},
+  'Grav Apple': {bp: 90},
+  'Fire Lash': {bp: 90},
+  'Spirit Shackle': {bp: 90},
+  'Psyshield Bash': {bp: 90},
+  'Trop Kick': {bp: 85},
+  'Infernal Parade': {bp: 65},
+  'Bone Rush': {bp: 30},
+  'Snap Trap': {type: 'Steel'},
+};
+
+const CHAMPIONS: {[name: string]: MoveData} = extend(true, {}, SV, CHAMPIONS_PATCH);
+
+export const MOVES = [{}, RBY, GSC, ADV, DPP, BW, XY, SM, SS, SV, CHAMPIONS];
 
 export class Moves implements I.Moves {
   private readonly gen: I.GenerationNum;
