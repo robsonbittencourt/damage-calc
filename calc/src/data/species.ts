@@ -5990,7 +5990,7 @@ const XY_PATCH: {[name: string]: DeepPartial<SpeciesData>} = {
   },
   'Alakazam-Mega': {
     types: ['Psychic'],
-    bs: {hp: 55, at: 50, df: 65, sa: 175, sd: 95, sp: 150},
+    bs: {hp: 55, at: 50, df: 65, sa: 175, sd: 105, sp: 150},
     weightkg: 48,
     abilities: {0: 'Trace'},
     baseSpecies: 'Alakazam',
@@ -10628,7 +10628,7 @@ const ZA_PATCH: {[name: string]: DeepPartial<SpeciesData>} = {
   },
   'Starmie-Mega': {
     types: ['Water', 'Psychic'],
-    bs: {hp: 60, at: 140, df: 105, sa: 130, sd: 105, sp: 120},
+    bs: {hp: 60, at: 100, df: 105, sa: 130, sd: 105, sp: 120},
     weightkg: 80.0,
     gender: 'N',
     abilities: {0: 'Illuminate'},
