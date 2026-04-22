@@ -642,8 +642,8 @@ export function calculateBPModsChampions(
   // The last case only applies when the Pokemon has the Mega Stone that matches its species
   // (or when it's already a Mega-Evolution)
   if (!resistedKnockOffDamage && defenderItem) {
-    const item = gen.items.get(toID(defenderItem))!;
-    resistedKnockOffDamage = !!(item.megaStone &&
+    const item = gen.items.get(toID(defenderItem));
+    resistedKnockOffDamage = !!(item?.megaStone &&
       (item.megaStone[defender.name] || Object.values(item.megaStone).includes(defender.name)));
   }
 
@@ -672,7 +672,7 @@ export function calculateBPModsChampions(
     bpMods.push(6144);
     desc.moveBP = basePower * 1.5;
   } else if (move.named('Solar Beam', 'Solar Blade') &&
-      field.hasWeather('Rain', 'Sand', 'Hail', 'Snow')) {
+      field.hasWeather('Rain', 'Sand', 'Hail', 'Snow') && !attacker.hasAbility('Mega Sol')) {
     bpMods.push(2048);
     desc.moveBP = basePower / 2;
     desc.weather = field.weather;
@@ -926,11 +926,11 @@ export function calculateDefenseChampions(
   }
 
   // unlike all other defense modifiers, Sandstorm SpD boost gets applied directly
-  if (field.hasWeather('Sand') && defender.hasType('Rock') && !hitsPhysical) {
+  if (field.hasWeather('Sand') && defender.hasType('Rock') && !hitsPhysical && !attacker.hasAbility('Mega Sol')) {
     defense = pokeRound((defense * 3) / 2);
     desc.weather = field.weather;
   }
-  if (field.hasWeather('Snow') && defender.hasType('Ice') && hitsPhysical) {
+  if (field.hasWeather('Snow') && defender.hasType('Ice') && hitsPhysical && !attacker.hasAbility('Mega Sol')) {
     defense = pokeRound((defense * 3) / 2);
     desc.weather = field.weather;
   }

@@ -3,7 +3,7 @@ import {Field} from '../field';
 import {inGens} from './helper';
 
 describe('Berry Tests', () => {
-  inGens(9, 9, ({gen, calculate, Pokemon, Move}) => {
+  inGens([9, 9], ({gen, calculate, Pokemon, Move}) => {
     describe('Sitrus Berry', () => {
       test('should calculate damage and chance to ko considering Sitrus Berry', () => {
         const attacker = Pokemon('Arcanine-Hisui', {
