@@ -725,7 +725,7 @@ export function calculateBPModsChampions(
   if (auraActive) {
     bpMods.push(5448);
     if (isAttackerAura) desc.attackerAbility = attacker.ability;
-    if (isDefenderAura) desc.defenderAbility = defender.ability;
+    if (isFieldFairyAura && !isAttackerAura) desc.isFairyAura = true;
   }
 
   if (

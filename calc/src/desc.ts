@@ -17,6 +17,7 @@ export interface RawDesc {
   attackerName: string;
   attackerTera?: string;
   defenderAbility?: string;
+  isFairyAura?: boolean;
   defenderItem?: string;
   defenderName: string;
   defenderTera?: string;
@@ -1412,6 +1413,9 @@ function buildDescription(description: RawDesc, attacker: Pokemon, defender: Pok
   }
   if (description.isPowerSpot) {
     output += 'Power Spot boosted ';
+  }
+  if (description.isFairyAura) {
+    output += 'Fairy Aura ';
   }
   if (description.isSwitching) {
     output += 'switching boosted ';
