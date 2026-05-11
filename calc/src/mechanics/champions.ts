@@ -926,13 +926,15 @@ export function calculateDefenseChampions(
   }
 
   // unlike all other defense modifiers, Sandstorm SpD boost gets applied directly
-  if (field.hasWeather('Sand') && defender.hasType('Rock') && !hitsPhysical && !attacker.hasAbility('Mega Sol')) {
-    defense = pokeRound((defense * 3) / 2);
-    desc.weather = field.weather;
-  }
-  if (field.hasWeather('Snow') && defender.hasType('Ice') && hitsPhysical && !attacker.hasAbility('Mega Sol')) {
-    defense = pokeRound((defense * 3) / 2);
-    desc.weather = field.weather;
+  if (!attacker.hasAbility('Mega Sol')) {
+    if (field.hasWeather('Sand') && defender.hasType('Rock') && !hitsPhysical) {
+      defense = pokeRound((defense * 3) / 2);
+      desc.weather = field.weather;
+    }
+    if (field.hasWeather('Snow') && defender.hasType('Ice') && hitsPhysical) {
+      defense = pokeRound((defense * 3) / 2);
+      desc.weather = field.weather;
+    }
   }
 
   const dfMods = calculateDfModsChampions(
