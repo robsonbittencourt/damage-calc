@@ -310,7 +310,7 @@ export function getKOChance(
   const {
     recovery: berryRecovery,
     threshold: berryThreshold,
-  } = getBerryRecovery(attacker, defender, gen, move);
+  } = getBerryRecovery(attacker, defender, gen, move, field);
 
   let berryText = '';
   if (berryRecovery > 0) {
@@ -775,9 +775,9 @@ function combine(damage: Damage): [number[], boolean] {
 }
 
 export function getBerryRecovery(
-  attacker: Pokemon, defender: Pokemon, gen: Generation, move: Move
+  attacker: Pokemon, defender: Pokemon, gen: Generation, move: Move, field?: Field
 ): { recovery: number; threshold: number } {
-  if (attacker.hasAbility('Unnerve', 'As One (Glastrier)', 'As One (Spectrier)')) {
+  if (field?.isUnnerve || attacker.hasAbility('Unnerve', 'As One (Glastrier)', 'As One (Spectrier)')) {
     return {recovery: 0, threshold: 0};
   }
 

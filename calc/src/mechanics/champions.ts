@@ -1083,6 +1083,7 @@ export function calculateFinalModsChampions(
   if (move.hasType(getBerryResistType(defender.item)) &&
       (typeEffectiveness > 1 || move.hasType('Normal')) &&
       hitCount === 0 &&
+      !field.isUnnerve &&
       !attacker.hasAbility('Unnerve')) {
     if (defender.hasAbility('Ripen')) {
       finalMods.push(1024);
