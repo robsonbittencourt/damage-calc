@@ -97,6 +97,7 @@ export class Result {
       this.defender,
       this.gen,
       this.move,
+      this.field,
     );
     const berryHP = this._berryHP ?? berry.recovery;
 

@@ -138,6 +138,26 @@ describe('Berry Tests', () => {
         expect(result.desc()).not.toContain('after Sitrus Berry recovery');
       });
 
+      test('should NOT show Sitrus Berry recovery if field has Unnerve active', () => {
+        const attacker = Pokemon('Urshifu', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {atk: 252},
+        });
+        const defender = Pokemon('Incineroar', {
+          level: 50,
+          item: 'Sitrus Berry',
+          nature: 'Impish',
+          evs: {hp: 252, def: 252},
+        });
+        const move = Move('Close Combat');
+        const field = new Field({isUnnerve: true});
+
+        const result = calculate(attacker, defender, move, field);
+
+        expect(result.desc()).not.toContain('after Sitrus Berry recovery');
+      });
+
       test('should show Sitrus Berry recovery with Ripen (50% recovery)', () => {
         const attacker = Pokemon('Incineroar', {
           level: 50,
