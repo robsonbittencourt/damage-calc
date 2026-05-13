@@ -288,6 +288,11 @@ export function calculateChampions(
     return result;
   }
 
+  if (move.named('Super Fang', 'Ruination')) {
+    result.damage = Math.max(1, Math.floor(defender.curHP() / 2));
+    return result;
+  }
+
   if (move.named('Final Gambit')) {
     result.damage = attacker.curHP();
     return result;

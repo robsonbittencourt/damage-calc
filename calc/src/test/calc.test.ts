@@ -26,6 +26,25 @@ describe('calc', () => {
       });
     });
 
+    inGens([9, 9], ({gen, calculate, Pokemon, Move}) => {
+      test(`Super Fang / Ruination (gen ${gen})`, () => {
+        const wochien = Pokemon('Wo-Chien', {level: 50});
+        const incineroar = Pokemon('Incineroar', {level: 50});
+        for (const move of [Move('Super Fang'), Move('Ruination')]) {
+          const result = calculate(wochien, incineroar, move);
+          expect(result.damage).toBe(Math.floor(incineroar.maxHP() / 2));
+        }
+      });
+
+      test(`Super Fang / Ruination minimum damage (gen ${gen})`, () => {
+        for (const move of [Move('Super Fang'), Move('Ruination')]) {
+          const wochien = Pokemon('Wo-Chien', {level: 50});
+          const incineroar = Pokemon('Incineroar', {level: 50, curHP: 1});
+          expect(calculate(wochien, incineroar, move).damage).toBe(1);
+        }
+      });
+    });
+
     inGens([1, 9], ({gen, calculate, Pokemon, Move}) => {
       test(`Night Shade / Seismic Toss (gen ${gen})`, () => {
         const mew = Pokemon('Mew', {level: 50});
