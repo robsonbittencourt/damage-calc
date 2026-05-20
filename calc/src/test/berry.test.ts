@@ -394,7 +394,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Occa Berry Gholdengo: 160-190 (82.4 - 97.9%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Gholdengo: 160-190 (82.4 - 97.9%) reduced by Occa Berry -- guaranteed 2HKO');
       });
 
       test('should show Passho Berry (Water) in description and reduce damage from OHKO to 2HKO', () => {
@@ -417,7 +417,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Passho Berry Incineroar on a critical hit: 150-180 (74.6 - 89.5%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Incineroar on a critical hit: 150-180 (74.6 - 89.5%) reduced by Passho Berry -- guaranteed 2HKO');
       });
 
       test('should show Wacan Berry (Electric) in description and reduce damage', () => {
@@ -440,7 +440,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Wacan Berry Urshifu-Rapid-Strike: 132-156 (75.4 - 89.1%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Urshifu-Rapid-Strike: 132-156 (75.4 - 89.1%) reduced by Wacan Berry -- guaranteed 2HKO');
       });
 
       test('should show Rindo Berry (Grass) in description and reduce damage', () => {
@@ -463,7 +463,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Rindo Berry Urshifu-Rapid-Strike: 127-150 (72.5 - 85.7%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Urshifu-Rapid-Strike: 127-150 (72.5 - 85.7%) reduced by Rindo Berry -- guaranteed 2HKO');
       });
 
       test('should show Yache Berry (Ice) in description and reduce damage', () => {
@@ -486,7 +486,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Yache Berry Landorus-Therian: 330-390 (168.3 - 198.9%) -- guaranteed OHKO');
+        expect(result.desc()).toContain('Landorus-Therian: 330-390 (168.3 - 198.9%) reduced by Yache Berry -- guaranteed OHKO');
       });
 
       test('should show Chople Berry (Fighting) in description and reduce damage from OHKO to 2HKO', () => {
@@ -509,7 +509,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Chople Berry Incineroar: 93-109 (46.2 - 54.2%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Incineroar: 93-109 (46.2 - 54.2%) reduced by Chople Berry -- guaranteed 2HKO');
       });
 
       test('should show Kebia Berry (Poison) in description and reduce damage', () => {
@@ -532,7 +532,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Kebia Berry Rillaboom: 112-133 (54.1 - 64.2%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Rillaboom: 112-133 (54.1 - 64.2%) reduced by Kebia Berry -- guaranteed 2HKO');
       });
 
       test('should show Shuca Berry (Ground) in description and reduce damage', () => {
@@ -555,7 +555,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Shuca Berry Incineroar: 84-99 (41.7 - 49.2%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Incineroar: 84-99 (41.7 - 49.2%) reduced by Shuca Berry -- guaranteed 2HKO');
       });
 
       test('should show Coba Berry (Flying) in description and reduce damage', () => {
@@ -578,7 +578,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Coba Berry Amoonguss: 115-136 (52 - 61.5%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Amoonguss: 115-136 (52 - 61.5%) reduced by Coba Berry -- guaranteed 2HKO');
       });
 
       test('should show Payapa Berry (Psychic) in description and reduce damage', () => {
@@ -601,7 +601,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Payapa Berry Hawlucha: 135-159 (88.2 - 103.9%) -- 25% chance to OHKO');
+        expect(result.desc()).toContain('Hawlucha: 135-159 (88.2 - 103.9%) reduced by Payapa Berry -- 25% chance to OHKO');
       });
 
       test('should show Tanga Berry (Bug) in description and reduce damage', () => {
@@ -624,7 +624,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Tanga Berry Meowscarada: 114-136 (75.4 - 90%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Meowscarada: 114-136 (75.4 - 90%) reduced by Tanga Berry -- guaranteed 2HKO');
       });
 
       test('should show Charti Berry (Rock) in description and reduce damage', () => {
@@ -647,7 +647,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Charti Berry Talonflame: 170-204 (111.1 - 133.3%) -- guaranteed OHKO');
+        expect(result.desc()).toContain('Talonflame: 170-204 (111.1 - 133.3%) reduced by Charti Berry -- guaranteed OHKO');
       });
 
       test('should show Kasib Berry (Ghost) in description and reduce damage', () => {
@@ -670,7 +670,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Kasib Berry Gholdengo: 84-99 (43.2 - 51%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Gholdengo: 84-99 (43.2 - 51%) reduced by Kasib Berry -- guaranteed 2HKO');
       });
 
       test('should show Haban Berry (Dragon) in description and reduce damage', () => {
@@ -693,7 +693,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Haban Berry Dragonite: 79-94 (39.8 - 47.4%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Dragonite: 79-94 (39.8 - 47.4%) reduced by Haban Berry -- guaranteed 2HKO');
       });
 
       test('should show Colbur Berry (Dark) in description and reduce damage', () => {
@@ -716,7 +716,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Colbur Berry Gholdengo: 87-103 (44.8 - 53%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Gholdengo: 87-103 (44.8 - 53%) reduced by Colbur Berry -- guaranteed 2HKO');
       });
 
       test('should show Babiri Berry (Steel) in description and reduce damage', () => {
@@ -739,7 +739,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Babiri Berry Flutter Mane: 90-106 (55.5 - 65.4%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Flutter Mane: 90-106 (55.5 - 65.4%) reduced by Babiri Berry -- guaranteed 2HKO');
       });
 
       test('should show Roseli Berry (Fairy) in description and reduce damage', () => {
@@ -762,7 +762,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Roseli Berry Urshifu-Rapid-Strike: 138-163 (78.8 - 93.1%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Urshifu-Rapid-Strike: 138-163 (78.8 - 93.1%) reduced by Roseli Berry -- guaranteed 2HKO');
       });
 
       test('should show Chilan Berry for Normal-type moves in description and reduce damage', () => {
@@ -785,7 +785,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Chilan Berry Cresselia: 58-69 (25.5 - 30.3%) -- guaranteed 3HKO');
+        expect(result.desc()).toContain('Cresselia: 58-69 (25.5 - 30.3%) reduced by Chilan Berry -- guaranteed 3HKO');
       });
 
       test('should consider tera when activate halve damage berries with Ripen', () => {
@@ -807,7 +807,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('32-38 (21.9 - 26%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('32-38 (21.9 - 26%) reduced by Chople Berry -- guaranteed 2HKO');
       });
 
       test('should work with Ripen for 75% reduction', () => {
@@ -831,7 +831,7 @@ describe('Berry Tests', () => {
 
         const result = calculate(attacker, defender, move, new Field());
 
-        expect(result.desc()).toContain('Yache Berry Appletun: 118-139 (54.3 - 64%) -- guaranteed 2HKO');
+        expect(result.desc()).toContain('Appletun: 118-139 (54.3 - 64%) reduced by Yache Berry -- guaranteed 2HKO');
       });
 
       test('should NOT show berry description if attacker has Unnerve', () => {

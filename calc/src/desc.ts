@@ -73,12 +73,15 @@ export function display(
   const minDisplay = toDisplay(notation, min, defender.maxHP());
   const maxDisplay = toDisplay(notation, max, defender.maxHP());
 
-  const desc = buildDescription(rawDesc, attacker, defender);
+  const berryResistType = getBerryResistType(rawDesc.defenderItem);
+  const isBerryResist = !!berryResistType && move.hasType(berryResistType);
+  const desc = buildDescription(rawDesc, attacker, defender, isBerryResist);
   const damageText = `${min}-${max} (${minDisplay} - ${maxDisplay}${notation})`;
+  const berryResistText = isBerryResist ? ` reduced by ${rawDesc.defenderItem}` : '';
 
   if (move.category === 'Status' && !move.named('Nature Power')) return `${desc}: ${damageText}`;
   const koChanceText = getKOChance(gen, attacker, defender, move, field, damage, rawDesc, err).text;
-  return koChanceText ? `${desc}: ${damageText} -- ${koChanceText}` : `${desc}: ${damageText}`;
+  return koChanceText ? `${desc}: ${damageText}${berryResistText} -- ${koChanceText}` : `${desc}: ${damageText}${berryResistText}`;
 }
 
 export function displayMove(
@@ -1360,7 +1363,7 @@ function squashMultihit(gen: Generation, d: number[], hits: number, err = true) 
   }
 }
 
-function buildDescription(description: RawDesc, attacker: Pokemon, defender: Pokemon) {
+function buildDescription(description: RawDesc, attacker: Pokemon, defender: Pokemon, omitDefenderItem = false) {
   const [attackerLevel, defenderLevel] = getDescriptionLevels(attacker, defender);
   let output = '';
   if (description.attackBoost) {
@@ -1444,7 +1447,7 @@ function buildDescription(description: RawDesc, attacker: Pokemon, defender: Pok
   if (description.defenseEVs) {
     output += '/ ' + description.defenseEVs + ' ';
   }
-  output = appendIfSet(output, description.defenderItem);
+  if (!omitDefenderItem) output = appendIfSet(output, description.defenderItem);
   output = appendIfSet(output, description.defenderAbility);
   if (description.isTabletsOfRuin) {
     output += 'Tablets of Ruin ';
