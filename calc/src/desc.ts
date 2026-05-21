@@ -320,20 +320,7 @@ export function getKOChance(
     berryText = (defender.item || 'Berry') + ' recovery';
   }
 
-  let damageWithoutBerry: number[] | undefined;
-  if (rawDesc.defenderItem && move.hasType(getBerryResistType(rawDesc.defenderItem))) {
-    const reduction = defender.hasAbility('Ripen') ? 0.25 : 0.5;
-    if (typeof damageObj === 'number') {
-      damageWithoutBerry = [Math.floor(damageObj / reduction)];
-    } else if (typeof damageObj[0] === 'number') {
-      damageWithoutBerry = (damage).map(d => Math.floor(d / reduction));
-    } else {
-      const dists = damageObj as number[][];
-      const firstDist = dists[0].map(d => Math.floor(d / reduction));
-      const distsWithoutBerry = [firstDist].concat(dists.slice(1));
-      damageWithoutBerry = combine(distsWithoutBerry)[0];
-    }
-  }
+  const damageWithoutBerry = computeDamageWithoutBerry(damageObj, damage, rawDesc, move, defender);
 
   function roundChance(chance: number) {
     // prevent displaying misleading 100% or 0% chances
@@ -775,6 +762,46 @@ function combine(damage: Damage): [number[], boolean] {
 
   const d = damage as number[][];
   return combineDistributions(d);
+}
+
+export function getDamageWithoutBerry(
+  damageObj: Damage,
+  rawDesc: RawDesc,
+  move: Move,
+  defender: Pokemon
+): Damage | undefined {
+  if (!rawDesc.defenderItem || !move.hasType(getBerryResistType(rawDesc.defenderItem))) {
+    return undefined;
+  }
+
+  const reduction = defender.hasAbility('Ripen') ? 0.25 : 0.5;
+
+  if (typeof damageObj === 'number') {
+    return Math.floor(damageObj / reduction);
+  }
+
+  if (typeof damageObj[0] === 'number') {
+    return (damageObj as number[]).map(d => Math.floor(d / reduction));
+  }
+
+  const dists = damageObj as number[][];
+  const firstDist = dists[0].map(d => Math.floor(d / reduction));
+  return [firstDist].concat(dists.slice(1));
+}
+
+function computeDamageWithoutBerry(
+  damageObj: Damage,
+  damage: number[],
+  rawDesc: RawDesc,
+  move: Move,
+  defender: Pokemon
+): number[] | undefined {
+  const raw = getDamageWithoutBerry(damageObj, rawDesc, move, defender);
+  if (raw === undefined) return undefined;
+
+  if (typeof raw === 'number') return [raw];
+  if (typeof raw[0] === 'number') return raw as number[];
+  return combine(raw as number[][])[0];
 }
 
 export function getBerryRecovery(

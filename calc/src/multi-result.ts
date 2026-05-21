@@ -10,6 +10,7 @@ import type {StatID} from './data/interface';
 import {
   computeMultiHitKOChance,
   getBerryRecovery,
+  getDamageWithoutBerry,
   getEndOfTurn,
   serializeEndOfTurnTexts,
 } from './desc';
@@ -83,17 +84,27 @@ export class MultiResult {
     let currentHP = hp;
     let berryConsumed = false;
 
-    const damagesAtIndex = this.results.map(r => {
-      const subArrays = extractDamageSubArrays(r.damage);
+    const sumDamage = (damage: typeof this.results[0]['damage']): number => {
+      const subArrays = extractDamageSubArrays(damage);
       if (subArrays.length === 0) return 0;
       const flat = subArrays.map(arr => arr[Math.min(rollIndex, arr.length - 1)]);
       return flat.reduce((a, b) => a + b, 0);
+    };
+
+    const damagesAtIndex = this.results.map(r => sumDamage(r.damage));
+    const damagesWithoutBerryAtIndex = this.results.map(r => {
+      const withoutBerry = getDamageWithoutBerry(r.damage, r.rawDesc, r.move, defender);
+      return withoutBerry !== undefined ? sumDamage(withoutBerry) : null;
     });
+    const hasTypeBerry = damagesWithoutBerryAtIndex.some(d => d !== null);
 
     for (let i = 1; i <= 10; i++) {
       let turnValue = 0;
+      const turnDamages = i === 1 || !hasTypeBerry
+        ? damagesAtIndex
+        : damagesWithoutBerryAtIndex.map((d, idx) => d ?? damagesAtIndex[idx]);
 
-      for (const dmg of damagesAtIndex) {
+      for (const dmg of turnDamages) {
         currentHP -= dmg;
 
         if (

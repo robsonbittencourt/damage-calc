@@ -6,6 +6,7 @@ import {
   getRecoil,
   getKOChance,
   getBerryRecovery,
+  getDamageWithoutBerry,
   getEndOfTurn,
 } from './desc';
 import type {Generation} from './data/interface';
@@ -77,7 +78,7 @@ export class Result {
   }
 
   afterTurn(rollIndex = DEFAULT_ROLL_INDEX): AfterTurnResult {
-    const hitsAtIndex = this.getHitsAtIndex(rollIndex);
+    const hitsAtIndex = this.getHitsAtIndex(this.damage, rollIndex);
     const minDamageTotal = damageRange(this.damage)[0];
     const hp = this.defender.curHP();
 
@@ -101,6 +102,16 @@ export class Result {
     );
     const berryHP = this._berryHP ?? berry.recovery;
 
+    const damageWithoutBerry = getDamageWithoutBerry(
+      this.damage,
+      this.rawDesc,
+      this.move,
+      this.defender,
+    );
+    const hitsWithoutBerryAtIndex = damageWithoutBerry !== undefined
+      ? this.getHitsAtIndex(damageWithoutBerry, rollIndex)
+      : null;
+
     const data: AfterTurnData[] = [];
     let currentHP = hp;
     let firstBerryTurn = 0;
@@ -108,8 +119,11 @@ export class Result {
     if (hitsAtIndex.some((h) => h > 0)) {
       for (let i = 1; i <= 10; i++) {
         let turnValue = 0;
+        const turnHits = i === 1 || !hitsWithoutBerryAtIndex
+          ? hitsAtIndex
+          : hitsWithoutBerryAtIndex;
 
-        for (const hitDamage of hitsAtIndex) {
+        for (const hitDamage of turnHits) {
           currentHP -= hitDamage;
 
           if (
@@ -159,8 +173,8 @@ export class Result {
     return new AfterTurnResult(data);
   }
 
-  private getHitsAtIndex(rollIndex: number): number[] {
-    const subArrays = extractDamageSubArrays(this.damage);
+  private getHitsAtIndex(damage: Damage, rollIndex: number): number[] {
+    const subArrays = extractDamageSubArrays(damage);
     if (subArrays.length === 0) return [];
 
     return subArrays.map(arr => arr[Math.min(rollIndex, arr.length - 1)]);
