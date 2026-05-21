@@ -496,6 +496,31 @@ describe('calc', () => {
           '252 Atk Parental Bond Kangaskhan-Mega Crunch vs. 0 HP / 0 Def Shadow Shield Lunala: 280-334 (67.4 - 80.4%) -- guaranteed 2HKO'
         );
       });
+
+      test('Parental Bond - type-resist berry should only reduce first hit damage', () => {
+        if (gen < 9) return;
+
+        const attacker = Pokemon('Kangaskhan-Mega', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {atk: 252},
+        });
+        const defender = Pokemon('Kingambit', {
+          level: 50,
+          nature: 'Adamant',
+          evs: {hp: 252, def: 0},
+          item: 'Chople Berry',
+        });
+
+        const result = calculate(attacker, defender, Move('Drain Punch'));
+
+        const firstHit = (result.damage as number[][])[0];
+        const secondHit = (result.damage as number[][])[1];
+
+        expect(result.desc()).toBe(
+          '252+ Atk Parental Bond Kangaskhan-Mega Drain Punch vs. 252 HP / 0 Def Kingambit: 118-142 (57 - 68.5%) reduced by Chople Berry -- guaranteed 2HKO'
+        );
+      });
     });
 
     inGens([6, 9], ({gen, calculate, Pokemon, Move}) => {
