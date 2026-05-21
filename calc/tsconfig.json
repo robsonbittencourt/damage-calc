@@ -5,7 +5,8 @@
     "outDir": "dist",
     "types": ["jest", "node"],
     "downlevelIteration": true,
-    "tsBuildInfoFile": ".tsbuildinfo"
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "skipLibCheck": true
   },
   "exclude": ["dist"]
 }
