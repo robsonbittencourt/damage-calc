@@ -1,4 +1,4 @@
-import type {Generation, AbilityName} from '../data/interface';
+import type {Generation, AbilityName, ItemName} from '../data/interface';
 import {toID} from '../util';
 import {
   getBerryResistType,
@@ -393,7 +393,13 @@ export function calculateChampions(
     const child = attacker.clone();
     child.ability = 'Parental Bond (Child)' as AbilityName;
     checkMultihitBoost(gen, child, defender, move, field, desc);
-    childDamage = calculateChampions(gen, child, defender, move, field).damage as number[];
+    const berryWasConsumed = getBerryResistType(defender.item) === move.type &&
+      (typeEffectiveness > 1 || move.hasType('Normal')) &&
+      !field.isUnnerve &&
+      !attacker.hasAbility('Unnerve', 'As One (Glastrier)', 'As One (Spectrier)');
+    const defenderForChild = berryWasConsumed ? defender.clone() : defender;
+    if (berryWasConsumed) defenderForChild.item = '' as ItemName;
+    childDamage = calculateChampions(gen, child, defenderForChild, move, field).damage as number[];
     desc.attackerAbility = attacker.ability;
   }
 
