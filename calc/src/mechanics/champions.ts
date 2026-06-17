@@ -260,7 +260,7 @@ export function calculateChampions(
       (move.hasType('Electric') &&
         defender.hasAbility('Lightning Rod', 'Motor Drive', 'Volt Absorb')) ||
       (move.hasType('Ground') &&
-        !field.isGravity && defender.hasAbility('Levitate')) ||
+        !field.isGravity && !defender.hasItem('Iron Ball') && defender.hasAbility('Levitate', 'Eelevate')) ||
       (move.flags.bullet && defender.hasAbility('Bulletproof')) ||
       (move.flags.sound && !move.named('Clangorous Soul') && defender.hasAbility('Soundproof')) ||
       (move.priority > 0 && defender.hasAbility('Queenly Majesty', 'Armor Tail')) ||
@@ -775,6 +775,11 @@ export function calculateBPModsChampions(
     desc.attackerAbility = attacker.ability;
   }
 
+  if (attacker.hasAbility('Fire Mane') && move.hasType('Fire')) {
+    bpMods.push(6144);
+    desc.attackerAbility = attacker.ability;
+  }
+
   if (defender.hasAbility('Dry Skin') && move.hasType('Fire')) {
     bpMods.push(5120);
     desc.defenderAbility = defender.ability;
@@ -793,6 +798,12 @@ export function calculateBPModsChampions(
     attacker.item && move.hasType(getItemBoostType(attacker.item))
   ) {
     bpMods.push(4915);
+    desc.attackerItem = attacker.item;
+  } else if (
+    (attacker.hasItem('Muscle Band') && move.category === 'Physical') ||
+    (attacker.hasItem('Wise Glasses') && move.category === 'Special')
+  ) {
+    bpMods.push(4505);
     desc.attackerItem = attacker.item;
   }
 
@@ -899,6 +910,14 @@ export function calculateAtModsChampions(
   if (defender.hasAbility('Heatproof') && move.hasType('Fire')) {
     atMods.push(2048);
     desc.defenderAbility = defender.ability;
+  }
+
+  if (
+    (attacker.hasItem('Choice Band') && move.category === 'Physical') ||
+    (attacker.hasItem('Choice Specs') && move.category === 'Special')
+  ) {
+    atMods.push(6144);
+    desc.attackerItem = attacker.item;
   }
 
   return atMods;
@@ -1084,6 +1103,22 @@ export function calculateFinalModsChampions(
   if (field.defenderSide.isFriendGuard) {
     finalMods.push(3072);
     desc.isFriendGuard = true;
+  }
+
+  if (attacker.hasItem('Expert Belt') && typeEffectiveness > 1) {
+    finalMods.push(4915);
+    desc.attackerItem = attacker.item;
+  } else if (attacker.hasItem('Life Orb')) {
+    finalMods.push(5324);
+    desc.attackerItem = attacker.item;
+  } else if (attacker.hasItem('Metronome') && move.timesUsedWithMetronome! >= 1) {
+    const timesUsedWithMetronome = Math.floor(move.timesUsedWithMetronome!);
+    if (timesUsedWithMetronome <= 4) {
+      finalMods.push(4096 + timesUsedWithMetronome * 819);
+    } else {
+      finalMods.push(8192);
+    }
+    desc.attackerItem = attacker.item;
   }
 
   if (move.hasType(getBerryResistType(defender.item)) &&

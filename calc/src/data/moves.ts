@@ -4534,7 +4534,7 @@ const SV_PATCH: {[name: string]: DeepPartial<MoveData>} = {
     zp: 190,
     maxPower: 140,
     target: 'allAdjacentFoes',
-    self: {boosts: {spa: -1}},
+    self: {boosts: {spa: -2}},
   },
   'Malignant Chain': {
     bp: 100,
