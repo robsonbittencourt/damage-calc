@@ -15,6 +15,9 @@ import {
   serializeEndOfTurnTexts,
 } from './desc';
 import {Move} from './move';
+import {calculate} from './calc';
+import {getModifiedStat} from './mechanics/util';
+import {getBerryResistType} from './items';
 
 export class MultiResult {
   defender: Pokemon;
@@ -97,12 +100,24 @@ export class MultiResult {
       return withoutBerry !== undefined ? sumDamage(withoutBerry) : null;
     });
     const hasTypeBerry = damagesWithoutBerryAtIndex.some(d => d !== null);
+    const hasStamina = this.hasStaminaDefender();
+    let staminaBoost = hasStamina ? this.initialDefBoost() : 0;
+    let staminaTypeBerryAvailable = true;
 
     for (let i = 1; i <= 10; i++) {
       let turnValue = 0;
-      const turnDamages = i === 1 || !hasTypeBerry
-        ? damagesAtIndex
-        : damagesWithoutBerryAtIndex.map((d, idx) => d ?? damagesAtIndex[idx]);
+      let turnDamages: number[];
+
+      if (hasStamina) {
+        const turn = this.staminaTurnDamages(staminaBoost, rollIndex, staminaTypeBerryAvailable);
+        turnDamages = turn.damages;
+        staminaBoost = turn.nextBoost;
+        staminaTypeBerryAvailable = turn.typeBerryAvailable;
+      } else {
+        turnDamages = i === 1 || !hasTypeBerry
+          ? damagesAtIndex
+          : damagesWithoutBerryAtIndex.map((d, idx) => d ?? damagesAtIndex[idx]);
+      }
 
       for (const dmg of turnDamages) {
         currentHP -= dmg;
@@ -163,16 +178,26 @@ export class MultiResult {
 
     const rowsPerTurn = baseDamages.length;
     const toxicCounter = target.status === 'tox' ? target.toxicCounter : 0;
+    const hasStamina = this.hasStaminaDefender();
+    const allStaminaDamages = hasStamina ? this.staminaHitDamages(9) : [];
 
     for (let i = 1; i <= 9; i++) {
-      const currentDamages: number[][] = [];
       const currentBerryRecovery: number[] = [];
       const currentBerryThreshold: number[] = [];
 
       for (let j = 0; j < i; j++) {
-        currentDamages.push(...baseDamages);
         currentBerryRecovery.push(...baseBerryRecovery);
         currentBerryThreshold.push(...baseBerryThreshold);
+      }
+
+      const currentDamages: number[][] = hasStamina
+        ? allStaminaDamages.slice(0, i * rowsPerTurn)
+        : [];
+
+      if (!hasStamina) {
+        for (let j = 0; j < i; j++) {
+          currentDamages.push(...baseDamages);
+        }
       }
 
       const result = computeMultiHitKOChance(
@@ -269,8 +294,16 @@ export class MultiResult {
       const {min: totalMin, max: totalMax} = this.range();
       const {min: minPercent, max: maxPercent} = this.rangePercentage();
 
+      const staminaText = this.hasStaminaDefender()
+        ? ' (Stamina considered)'
+        : '';
+      const defenderNameAndDamageWithNote = defenderNameAndDamageString.replace(
+        `${resultOne.defender.name}:`,
+        `${resultOne.defender.name}${staminaText}:`,
+      );
+
       const defenderNameAndDamage = this.updateDefenderDamageText(
-        defenderNameAndDamageString,
+        defenderNameAndDamageWithNote,
         totalMin,
         totalMax,
         minPercent,
@@ -295,7 +328,7 @@ export class MultiResult {
 
       return (
         `${attackerDescription} AND ${secondAttackerDescritption}` +
-        ` vs. ${defenderBulk} ${tera}${defenderNameAndDamage}`
+        ` vs. ${defenderBulk} ${tera}${defenderNameAndDamage}${staminaText}`
       );
     } catch (e) {
       return (
@@ -315,6 +348,111 @@ export class MultiResult {
     const remainingHp = this.afterTurn(rollIndex).remainingHpUntilTurn(turn);
 
     return hp - remainingHp;
+  }
+
+  private hasStaminaDefender(): boolean {
+    return this.defender.hasAbility('Stamina');
+  }
+
+  private initialDefBoost(): number {
+    return this.defender.boosts.def ?? 0;
+  }
+
+  private recomputeDamageCache = new Map<string, number[][]>();
+
+  private consumesTypeBerry(result: Result): boolean {
+    const berryType = getBerryResistType(this.defender.item);
+
+    return berryType !== undefined && result.move.hasType(berryType);
+  }
+
+  private recomputeDamageAtBoost(
+    resultIndex: number,
+    defBoost: number,
+    typeBerryAvailable = true,
+  ): number[][] {
+    const result = this.results[resultIndex];
+    const boost = Math.max(-6, Math.min(defBoost, 6));
+    const cacheKey = `${resultIndex}:${boost}:${typeBerryAvailable ? 1 : 0}`;
+    const cached = this.recomputeDamageCache.get(cacheKey);
+
+    if (cached) return cached;
+
+    const defender = this.defender.clone();
+    defender.boosts.def = boost;
+    defender.stats.def = getModifiedStat(
+      defender.rawStats.def,
+      defender.boosts.def,
+      result.gen,
+    );
+
+    if (!typeBerryAvailable) {
+      defender.item = undefined;
+    }
+
+    const recomputed = calculate(
+      result.gen,
+      result.attacker,
+      defender,
+      result.move,
+      result.field,
+    );
+
+    const subArrays = extractDamageSubArrays(recomputed.damage);
+    this.recomputeDamageCache.set(cacheKey, subArrays);
+
+    return subArrays;
+  }
+
+  private staminaTurnDamages(
+    startBoost: number,
+    rollIndex: number,
+    typeBerryAvailable: boolean,
+  ): {damages: number[]; nextBoost: number; typeBerryAvailable: boolean} {
+    const damages: number[] = [];
+    let boost = startBoost;
+    let berryAvailable = typeBerryAvailable;
+
+    for (let idx = 0; idx < this.results.length; idx++) {
+      const subArrays = this.recomputeDamageAtBoost(idx, boost, berryAvailable);
+
+      const summed = subArrays.reduce(
+        (acc, sub) => acc + sub[Math.min(rollIndex, sub.length - 1)],
+        0,
+      );
+      damages.push(summed);
+      boost = Math.min(boost + subArrays.length, 6);
+
+      if (berryAvailable && this.consumesTypeBerry(this.results[idx])) {
+        berryAvailable = false;
+      }
+    }
+
+    return {damages, nextBoost: boost, typeBerryAvailable: berryAvailable};
+  }
+
+  private staminaHitDamages(turns: number): number[][] {
+    const damages: number[][] = [];
+    let boost = this.initialDefBoost();
+    let berryAvailable = true;
+
+    for (let turn = 0; turn < turns; turn++) {
+      for (let idx = 0; idx < this.results.length; idx++) {
+        const subArrays = this.recomputeDamageAtBoost(idx, boost, berryAvailable);
+        const consumesBerry = berryAvailable && this.consumesTypeBerry(this.results[idx]);
+
+        subArrays.forEach((sub) => {
+          damages.push(sub);
+          boost = Math.min(boost + 1, 6);
+        });
+
+        if (consumesBerry) {
+          berryAvailable = false;
+        }
+      }
+    }
+
+    return damages;
   }
 
   private mergeBulkStats(

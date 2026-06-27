@@ -9,6 +9,7 @@ import {
   getBerryRecovery,
   getEndOfTurn,
 } from './desc';
+import {getModifiedStat} from './mechanics/util';
 
 import {MultiResult} from './multi-result';
 
@@ -16,6 +17,17 @@ function updateDefenderHP(defender: Pokemon, nextHP: number, maxHP: number) {
   const percentage = (nextHP / maxHP) * 100;
   defender.originalCurHP = Math.round(
     (defender.maxHP(true) * percentage) / 100,
+  );
+}
+
+export function applyStaminaAfterHit(defender: Pokemon, gen: Generation) {
+  if (!defender.hasAbility('Stamina')) return;
+
+  defender.boosts.def = Math.min(defender.boosts.def + 1, 6);
+  defender.stats.def = getModifiedStat(
+    defender.rawStats.def,
+    defender.boosts.def,
+    gen,
   );
 }
 
@@ -115,6 +127,8 @@ export function calculateMulti(
       berryRecoveries.push(initialBerryData.recovery);
       berryThresholds.push(initialBerryData.threshold);
     }
+
+    applyStaminaAfterHit(currentDefender, gen);
   }
 
   let koChance = {chance: 0, n: 0, text: '', berryConsumed: false};
