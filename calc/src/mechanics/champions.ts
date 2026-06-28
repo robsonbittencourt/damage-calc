@@ -104,7 +104,7 @@ export function calculateChampions(
     'Armor Tail', 'Aroma Veil', 'Battle Armor', 'Big Pecks',
     'Bulletproof', 'Clear Body', 'Contrary', 'Damp',
     'Disguise', 'Dry Skin', 'Earth Eater', 'Filter',
-    'Flash Fire', 'Flower Veil', 'Friend Guard', 'Fur Coat',
+    'Flash Fire', 'Flower Veil', 'Fluffy', 'Friend Guard', 'Fur Coat',
     'Heatproof', 'Heavy Metal', 'Hyper Cutter', 'Illuminate',
     'Immunity', 'Inner Focus', 'Insomnia', 'Keen Eye',
     'Leaf Guard', 'Levitate', 'Light Metal', 'Lightning Rod',
@@ -1095,6 +1095,11 @@ export function calculateFinalModsChampions(
     desc.defenderAbility = defender.ability;
   }
 
+  if (defender.hasAbility('Fluffy') && move.flags.contact && !attacker.hasAbility('Long Reach')) {
+    finalMods.push(2048);
+    desc.defenderAbility = defender.ability;
+  }
+
   if (defender.hasAbility('Solid Rock', 'Filter') && typeEffectiveness > 1) {
     finalMods.push(3072);
     desc.defenderAbility = defender.ability;
@@ -1103,6 +1108,11 @@ export function calculateFinalModsChampions(
   if (field.defenderSide.isFriendGuard) {
     finalMods.push(3072);
     desc.isFriendGuard = true;
+  }
+
+  if (defender.hasAbility('Fluffy') && move.hasType('Fire')) {
+    finalMods.push(8192);
+    desc.defenderAbility = defender.ability;
   }
 
   if (attacker.hasItem('Expert Belt') && typeEffectiveness > 1) {
