@@ -912,7 +912,10 @@ export function calculateAtModsChampions(
     desc.defenderAbility = defender.ability;
   }
 
-  if (
+  if (attacker.hasItem('Light Ball') && attacker.name.includes('Pikachu') && !move.isZ) {
+    atMods.push(8192);
+    desc.attackerItem = attacker.item;
+  } else if (
     (attacker.hasItem('Choice Band') && move.category === 'Physical') ||
     (attacker.hasItem('Choice Specs') && move.category === 'Special')
   ) {
