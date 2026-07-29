@@ -213,6 +213,40 @@ describe('multicalc', () => {
 
       expect(multiResult.desc()).toBe(expected);
     });
+
+    test('Hydreigon and Kingambit vs Colbur Berry Farigiraf only reduces the first hit', () => {
+      const hydreigon = new Pokemon(gen, 'Hydreigon', {
+        level: 50,
+        nature: 'Modest',
+        evs: {spa: 252},
+      });
+
+      const kingambit = new Pokemon(gen, 'Kingambit', {
+        level: 50,
+        item: 'Black Glasses',
+        nature: 'Adamant',
+        evs: {atk: 252},
+      });
+
+      const farigiraf = new Pokemon(gen, 'Farigiraf', {
+        level: 50,
+        item: 'Colbur Berry',
+        nature: 'Impish',
+        evs: {hp: 196, def: 204, spd: 116},
+      });
+
+      const multiResult = calculateMulti(
+        gen,
+        [hydreigon, kingambit],
+        farigiraf,
+        [new Move(gen, 'Dark Pulse'), new Move(gen, 'Kowtow Cleave')],
+        new Field({gameType: 'Doubles'})
+      );
+
+      const expected = '252+ SpA Hydreigon Dark Pulse AND 252+ Atk Black Glasses Kingambit Kowtow Cleave vs. 196 HP / 204+ Def / 116 SpD Colbur Berry Farigiraf: 270-322 (122.7 - 146.3%) -- guaranteed OHKO';
+
+      expect(multiResult.desc()).toBe(expected);
+    });
   });
 
   describe('MultiResult.afterTurn', () => {

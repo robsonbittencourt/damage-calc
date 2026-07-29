@@ -9,6 +9,7 @@ import {
   getBerryRecovery,
   getEndOfTurn,
 } from './desc';
+import {getBerryResistType} from './items';
 import {getModifiedStat} from './mechanics/util';
 
 import {MultiResult} from './multi-result';
@@ -120,6 +121,13 @@ export function calculateMulti(
         Math.max(0, currentHP - maxDamage),
         maxHP,
       );
+    }
+
+    if (
+      result.rawDesc.defenderItem === currentDefender.item &&
+      getBerryResistType(currentDefender.item)
+    ) {
+      currentDefender.item = undefined;
     }
 
     for (let k = 0; k < hitsAdded; k++) {
