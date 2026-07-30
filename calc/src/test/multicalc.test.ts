@@ -247,6 +247,39 @@ describe('multicalc', () => {
 
       expect(multiResult.desc()).toBe(expected);
     });
+
+    test('Hydreigon Draco Meteor immune to Fairy-type Ninetales-Alola AND Kingambit Kowtow Cleave still deals damage', () => {
+      const hydreigon = new Pokemon(gen, 'Hydreigon', {
+        level: 50,
+        nature: 'Modest',
+        evs: {spa: 252},
+      });
+
+      const kingambit = new Pokemon(gen, 'Kingambit', {
+        level: 50,
+        item: 'Black Glasses',
+        nature: 'Adamant',
+        evs: {atk: 252},
+      });
+
+      const ninetales = new Pokemon(gen, 'Ninetales-Alola', {
+        level: 50,
+        nature: 'Bold',
+        evs: {hp: 252, def: 252},
+      });
+
+      const multiResult = calculateMulti(
+        gen,
+        [hydreigon, kingambit],
+        ninetales,
+        [new Move(gen, 'Draco Meteor'), new Move(gen, 'Kowtow Cleave')],
+        new Field({gameType: 'Doubles'})
+      );
+
+      const expected = 'Hydreigon Draco Meteor AND 252+ Atk Black Glasses Kingambit Kowtow Cleave vs. 252 HP / 252+ Def Ninetales-Alola: 42-51 (23.3 - 28.3%) -- 88.5% chance to 4HKO';
+
+      expect(multiResult.desc()).toBe(expected);
+    });
   });
 
   describe('MultiResult.afterTurn', () => {

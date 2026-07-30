@@ -272,16 +272,24 @@ export class MultiResult {
     const resultTwo = this.results[1];
     const defender = resultOne.defender;
 
+    const {min: combinedMin, max: combinedMax} = this.range();
+    if (combinedMin === 0 && combinedMax === 0) {
+      return (
+        `${resultOne.attacker.name} ${resultOne.move.name}` +
+        ` AND ${resultTwo.attacker.name} ${resultTwo.move.name}` +
+        ` vs. ${resultOne.defender.name}: 0-0 (0 - 0%) -- possibly the worst move ever`
+      );
+    }
+
     try {
-      const attackerDescription = resultOne
-        .desc()
-        .substring(0, resultOne.desc().indexOf(' vs.'));
-      const secondAttackerDescritption = resultTwo
-        .desc()
-        .substring(0, resultTwo.desc().indexOf(' vs.'));
-      const defenderDescription = resultOne
-        .desc()
-        .substring(resultOne.desc().indexOf(' vs.') + 5);
+      const resultOneDesc = resultOne.fullDesc('%', false);
+      const resultTwoDesc = resultTwo.fullDesc('%', false);
+      const attackerDescription = resultOneDesc
+        .substring(0, resultOneDesc.indexOf(' vs.'));
+      const secondAttackerDescritption = resultTwoDesc
+        .substring(0, resultTwoDesc.indexOf(' vs.'));
+      const defenderDescription = resultOneDesc
+        .substring(resultOneDesc.indexOf(' vs.') + 5);
 
       const defenderBulk = this.mergeBulkStats(resultOne, resultTwo, defender);
       const tera = resultOne.defender.teraType
@@ -460,12 +468,12 @@ export class MultiResult {
     resultTwo: Result,
     defender: Pokemon,
   ): string {
-    const resultOneDefenderDesc = resultOne
-      .desc()
-      .substring(resultOne.desc().indexOf(' vs.') + 5);
-    const resultTwoDefenderDesc = resultTwo
-      .desc()
-      .substring(resultTwo.desc().indexOf(' vs.') + 5);
+    const resultOneDesc = resultOne.fullDesc('%', false);
+    const resultTwoDesc = resultTwo.fullDesc('%', false);
+    const resultOneDefenderDesc = resultOneDesc
+      .substring(resultOneDesc.indexOf(' vs.') + 5);
+    const resultTwoDefenderDesc = resultTwoDesc
+      .substring(resultTwoDesc.indexOf(' vs.') + 5);
 
     let output = `${resultOne.defender.evs.hp} HP`;
 
